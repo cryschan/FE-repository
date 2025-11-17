@@ -1,130 +1,139 @@
 import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
 import {
-  Users,
   LayoutDashboard,
   FileText,
-  Megaphone,
-  PieChart,
-  Settings,
   HelpCircle,
-  LogOut,
+  User,
   ChevronDown,
+  ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  Sidebar as ShadcnSidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+} from "@/components/ui/sidebar";
 
-const menuItems = [
-  {
-    title: "회원 관리",
-    icon: Users,
-    submenu: [
-      { title: "전체 회원 목록", path: "/members" },
-      { title: "탈퇴 회원 목록", path: "/members/deleted" },
-    ],
-  },
-  {
-    title: "광고 배너 관리",
-    icon: Megaphone,
-    submenu: [
-      { title: "광고 배너 목록", path: "/dashboard" },
-    ],
-  },
-  {
-    title: "학습 퀴즈 관리",
-    icon: PieChart,
-    submenu: [
-      { title: "경제 퀴즈 목록", path: "/quiz" },
-    ],
-  },
-  {
-    title: "관리자 계정 관리",
-    icon: Settings,
-    submenu: [
-      { title: "관리자 계정 목록", path: "/admin" },
-      { title: "관리자 권한 관리", path: "/admin/permissions" },
-    ],
-  },
-];
-
-const Sidebar = () => {
+const AppSidebar = () => {
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState<string[]>(["광고 배너 관리"]);
 
-  const toggleMenu = (title: string) => {
-    setOpenMenus((prev) =>
-      prev.includes(title) ? prev.filter((item) => item !== title) : [...prev, title]
+  const sections = [
+    {
+      label: "대시보드",
+      icon: LayoutDashboard,
+      items: [{ title: "대시보드", to: "/dashboard" }],
+    },
+    {
+      label: "블로그 글 관리",
+      icon: FileText,
+      items: [{ title: "블로그 글 목록", to: "/posts" }],
+    },
+    {
+      label: "고객 지원",
+      icon: HelpCircle,
+      items: [{ title: "QnA (자주 묻는 질문 / 내 문의)", to: "/support" }],
+    },
+    {
+      label: "마이페이지",
+      icon: User,
+      items: [{ title: "내 정보 수정", to: "/profile" }],
+    },
+    {
+      label: "관리자",
+      icon: ShieldCheck,
+      items: [{ title: "관리자페이지", to: "/admin" }],
+    },
+  ];
+
+  const [openSections, setOpenSections] = useState<string[]>(["대시보드"]);
+  const toggleSection = (label: string) => {
+    setOpenSections((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
     );
   };
 
   return (
-    <div className="w-64 bg-sidebar-background h-screen flex flex-col border-r border-sidebar-border">
-      {/* Logo */}
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-          <span className="text-xl text-primary-foreground">✱</span>
+    <ShadcnSidebar
+      collapsible="offcanvas"
+      variant="sidebar"
+      className="bg-sidebar text-sidebar-foreground p-2"
+    >
+      <SidebarHeader>
+        <div className="flex items-center gap-3 px-2 py-6">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+            <img
+              src="/image/santa.png"
+              alt="logo"
+              className="w-full h-full object-cover rounded-lg"
+            />
+          </div>
+          <span className="text-lg font-bold">Happy Coding</span>
         </div>
-        <span className="text-2xl font-bold text-sidebar-foreground">finberry*</span>
-      </div>
-
-      {/* Menu Items */}
-      <nav className="flex-1 px-3 space-y-1">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isOpen = openMenus.includes(item.title);
-
+      </SidebarHeader>
+      <SidebarContent>
+        {sections.map((section) => {
+          const isOpen = openSections.includes(section.label);
+          const Icon = section.icon;
           return (
-            <div key={item.title}>
+            <SidebarGroup key={section.label}>
               <button
-                onClick={() => toggleMenu(item.title)}
-                className="w-full flex items-center justify-between px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors"
+                type="button"
+                onClick={() => toggleSection(section.label)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               >
-                <div className="flex items-center gap-3">
-                  <Icon className="w-5 h-5" />
-                  <span className="text-sm">{item.title}</span>
-                </div>
+                {Icon ? <Icon className="h-4 w-4" /> : null}
+                <span>{section.label}</span>
                 <ChevronDown
-                  className={cn(
-                    "w-4 h-4 transition-transform",
-                    isOpen && "transform rotate-180"
-                  )}
+                  className={`ml-auto h-4 w-4 transition-transform ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
                 />
               </button>
-
-              {isOpen && item.submenu && (
-                <div className="ml-6 mt-1 space-y-1">
-                  {item.submenu.map((subItem) => (
-                    <Link
-                      key={subItem.path}
-                      to={subItem.path}
-                      className={cn(
-                        "block px-3 py-2 text-sm rounded-md transition-colors",
-                        location.pathname === subItem.path
-                          ? "bg-sidebar-accent text-sidebar-foreground"
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                      )}
-                    >
-                      {subItem.title}
-                    </Link>
-                  ))}
-                </div>
+              {isOpen && (
+                <SidebarGroupContent>
+                  <SidebarMenu className="flex w-full min-w-0 flex-col gap-1 border-l ">
+                    {section.items.map(({ title, to }) => (
+                      <SidebarMenuItem key={to}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={location.pathname === to}
+                          tooltip={title}
+                        >
+                          <Link
+                            to={to}
+                            className="peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left outline-none ring-sidebar-ring transition-[width,height,padding] focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground active:font-medium disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-8 text-sm"
+                          >
+                            <span>{title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
               )}
-            </div>
+            </SidebarGroup>
           );
         })}
-      </nav>
-
-      {/* Bottom Actions */}
-      <div className="p-3 border-t border-sidebar-border space-y-1">
-        <Link
-          to="/support"
-          className="flex items-center gap-3 px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent rounded-md transition-colors text-sm"
-        >
-          <HelpCircle className="w-5 h-5" />
-          <span>로그아웃</span>
-        </Link>
-      </div>
-    </div>
+      </SidebarContent>
+      <SidebarFooter />
+    </ShadcnSidebar>
   );
 };
 
-export default Sidebar;
+// Provider를 이 컴포넌트 내부에서 함께 노출해 상위에서 간단히 쓸 수 있게 함
+export const SidebarWithProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  return <SidebarProvider>{children}</SidebarProvider>;
+};
+
+export default AppSidebar;

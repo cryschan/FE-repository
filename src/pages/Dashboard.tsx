@@ -1,9 +1,22 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Eye, TrendingUp, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const mockArticles = [
   {
@@ -43,12 +56,17 @@ const trafficData = [
 ];
 
 const Dashboard = () => {
-  const totalViews = mockArticles.reduce((sum, article) => sum + article.views, 0);
-  const publishedCount = mockArticles.filter((a) => a.status === "published").length;
+  const totalViews = mockArticles.reduce(
+    (sum, article) => sum + article.views,
+    0
+  );
+  const publishedCount = mockArticles.filter(
+    (a) => a.status === "published"
+  ).length;
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <div className="container mx-auto px-4 py-8 space-y-8">
+    <div className="bg-gradient-subtle">
+      <div className="w-full mx-auto p-8 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -63,8 +81,7 @@ const Dashboard = () => {
             </Button>
             <Button asChild className="gap-2">
               <Link to="/editor">
-                <Plus className="w-4 h-4" />
-                새 글 작성
+                <Plus className="w-4 h-4" />새 글 작성
               </Link>
             </Button>
           </div>
@@ -80,7 +97,9 @@ const Dashboard = () => {
               <Eye className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{totalViews.toLocaleString()}</div>
+              <div className="text-3xl font-bold text-foreground">
+                {totalViews.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 지난 7일 동안
               </p>
@@ -95,7 +114,9 @@ const Dashboard = () => {
               <FileText className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">{publishedCount}</div>
+              <div className="text-3xl font-bold text-foreground">
+                {publishedCount}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 전체 {mockArticles.length}개 중
               </p>
@@ -113,9 +134,7 @@ const Dashboard = () => {
               <div className="text-3xl font-bold text-foreground">
                 {Math.round(totalViews / mockArticles.length).toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                글당 평균
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">글당 평균</p>
             </CardContent>
           </Card>
         </div>
@@ -134,10 +153,7 @@ const Dashboard = () => {
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
-                <YAxis
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
@@ -154,48 +170,6 @@ const Dashboard = () => {
                 />
               </LineChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Articles List */}
-        <Card className="shadow-card">
-          <CardHeader>
-            <CardTitle>블로그 글 목록</CardTitle>
-            <CardDescription>생성된 콘텐츠를 관리하세요</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {mockArticles.map((article) => (
-                <div
-                  key={article.id}
-                  className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-medium text-foreground">
-                        {article.title}
-                      </h3>
-                      <Badge variant={article.status === "published" ? "default" : "secondary"}>
-                        {article.status === "published" ? "게시됨" : "임시저장"}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{article.category}</span>
-                      <span>•</span>
-                      <span className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        {article.views.toLocaleString()}
-                      </span>
-                      <span>•</span>
-                      <span>{article.createdAt}</span>
-                    </div>
-                  </div>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/editor/${article.id}`}>편집</Link>
-                  </Button>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </div>

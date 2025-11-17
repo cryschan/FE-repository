@@ -1,100 +1,211 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Send } from "lucide-react";
-import { Link } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, MessageSquare, Clock, CheckCircle, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const INQUIRY_TYPES = [
-  "통신 오류",
-  "블로그 글 생성 오류",
-  "계정 문제",
-  "기능 제안",
-  "기타 문의사항",
+type Inquiry = {
+  id: string;
+  title: string;
+  category: string;
+  status: "answered" | "pending";
+  createdAt: string;
+  answer?: string | null;
+  content?: string | null;
+};
+
+const faqs = [
+  {
+    id: "1",
+    question: "AI가 블로그 글을 생성하는 데 얼마나 걸리나요?",
+    answer:
+      "일반적으로 키워드와 제품 URL을 입력한 후 약 30초에서 1분 정도 소요됩니다. 복잡한 카테고리나 긴 콘텐츠의 경우 조금 더 걸릴 수 있습니다.",
+  },
+  {
+    id: "2",
+    question: "생성된 블로그 글을 수정할 수 있나요?",
+    answer:
+      "네, 가능합니다. 블로그 글 편집 화면에서 AI가 생성한 콘텐츠를 자유롭게 수정하고 편집할 수 있습니다. 마크다운 형식을 지원하며 실시간 미리보기 기능도 제공됩니다.",
+  },
+  {
+    id: "3",
+    question: "한 번에 여러 개의 카테고리를 선택할 수 있나요?",
+    answer:
+      "회원가입 시 여러 카테고리를 선택하실 수 있습니다. 선택한 카테고리를 기반으로 AI가 다양한 키워드를 추출하고 관련 콘텐츠를 생성합니다.",
+  },
+  {
+    id: "4",
+    question: "트래픽 통계는 어떻게 측정되나요?",
+    answer:
+      "대시보드에서 각 블로그 글의 조회수, 클릭수, CTR(클릭률) 등을 실시간으로 확인할 수 있습니다. 데이터는 매일 업데이트됩니다.",
+  },
+  {
+    id: "5",
+    question: "쇼핑몰 URL은 어떻게 활용되나요?",
+    answer:
+      "AI가 입력하신 쇼핑몰 URL에서 제품 정보를 분석하여 관련 키워드를 추출하고, 해당 제품을 자연스럽게 홍보하는 블로그 글을 작성합니다.",
+  },
 ];
+
+const initialInquiries: Inquiry[] = [
+  {
+    id: "1",
+    title: "블로그 글 생성 중 오류가 발생했습니다",
+    category: "기술 문의",
+    status: "answered",
+    createdAt: "2024-11-15",
+    answer:
+      "문의 주신 내용 확인했습니다. 해당 오류는 일시적인 서버 문제로 인한 것이었으며, 현재는 정상적으로 작동하고 있습니다. 불편을 드려 죄송합니다.",
+  },
+  {
+    id: "2",
+    title: "카테고리 추가가 가능한가요?",
+    category: "기능 문의",
+    status: "pending",
+    createdAt: "2024-11-14",
+    answer: null,
+  },
+  {
+    id: "3",
+    title: "결제 관련 문의",
+    category: "결제/환불",
+    status: "answered",
+    createdAt: "2024-11-10",
+    answer:
+      "결제 내역은 내 정보 > 결제 관리에서 확인하실 수 있습니다. 추가 문의사항이 있으시면 언제든지 연락 주세요.",
+  },
+];
+
+const CATEGORIES = ["기술 문의", "기능 문의", "결제/환불", "계정/보안", "기타"];
 
 const Support = () => {
   const { toast } = useToast();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [type, setType] = useState("");
-  const [message, setMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [selectedTab, setSelectedTab] = useState("faq");
+  const [open, setOpen] = useState(false);
+
+  const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
+
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState<string>("");
+  const [content, setContent] = useState("");
+
+  const resetForm = () => {
+    setTitle("");
+    setCategory("");
+    setContent("");
+  };
+
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement submit logic
-    console.log("Support inquiry:", { name, email, type, message });
-    
+
+    if (!title.trim() || !category.trim()) {
+      toast({
+        title: "입력값을 확인해주세요",
+        description: "제목과 카테고리를 입력해 주세요.",
+      });
+      return;
+    }
+
+    const newItem: Inquiry = {
+      id: Date.now().toString(),
+      title: title.trim(),
+      category,
+      status: "pending",
+      createdAt: new Date().toISOString().slice(0, 10),
+      answer: null,
+      content: content || null,
+    };
+
+    setInquiries((prev) => [newItem, ...prev]);
     toast({
       title: "문의가 접수되었습니다",
       description: "빠른 시일 내에 답변 드리겠습니다.",
     });
-
-    // Reset form
-    setName("");
-    setEmail("");
-    setType("");
-    setMessage("");
+    resetForm();
+    setOpen(false);
+    setSelectedTab("my-inquiries");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <Button variant="ghost" asChild className="gap-2">
-            <Link to="/dashboard">
-              <ArrowLeft className="w-4 h-4" />
-              대시보드로 돌아가기
-            </Link>
-          </Button>
+    <div className="p-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold">고객 지원</h1>
+            <p className="text-gray-600 mt-1">
+              자주 묻는 질문과 나의 문의 내역을 확인하세요
+            </p>
+          </div>
 
-          <Card className="shadow-elevated">
-            <CardHeader>
-              <CardTitle>문의사항</CardTitle>
-              <CardDescription>
-                문제가 발생했거나 궁금한 점이 있으시면 언제든지 문의해주세요
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">이름</Label>
-                    <Input
-                      id="name"
-                      placeholder="홍길동"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">이메일</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <Button onClick={() => setOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              문의하기
+            </Button>
+
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>문의 생성</DialogTitle>
+                <DialogDescription>
+                  아래 항목을 작성해 주세요.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleCreate} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">제목</Label>
+                  <Input
+                    id="title"
+                    placeholder="문의 제목을 입력하세요"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="type">문의 유형</Label>
-                  <Select value={type} onValueChange={setType} required>
-                    <SelectTrigger id="type">
-                      <SelectValue placeholder="문의 유형을 선택하세요" />
+                  <Label htmlFor="category">카테고리</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="카테고리를 선택하세요" />
                     </SelectTrigger>
                     <SelectContent>
-                      {INQUIRY_TYPES.map((inquiryType) => (
-                        <SelectItem key={inquiryType} value={inquiryType}>
-                          {inquiryType}
+                      {CATEGORIES.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -102,60 +213,127 @@ const Support = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">문의 내용</Label>
+                  <Label htmlFor="content">문의 내용 (선택)</Label>
                   <Textarea
-                    id="message"
-                    placeholder="문제 상황이나 문의 내용을 자세히 작성해주세요..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="min-h-[200px]"
-                    required
+                    id="content"
+                    placeholder="상세한 내용을 작성해 주세요"
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="min-h-[160px]"
                   />
                 </div>
 
-                <Button type="submit" className="w-full gap-2">
-                  <Send className="w-4 h-4" />
-                  문의하기
-                </Button>
+                <DialogFooter>
+                  <Button type="submit" className="w-full gap-2">
+                    <Send className="w-4 h-4" />
+                    문의 생성
+                  </Button>
+                </DialogFooter>
               </form>
-            </CardContent>
-          </Card>
-
-          {/* FAQ Section */}
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>자주 묻는 질문</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="font-medium text-foreground">
-                  블로그 글이 생성되지 않아요
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  쇼핑몰 URL이 올바른지 확인하고, 카테고리가 정확히 선택되었는지 확인해주세요.
-                  문제가 지속되면 문의를 남겨주시기 바랍니다.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-medium text-foreground">
-                  생성된 콘텐츠를 수정할 수 있나요?
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  네, 에디터 페이지에서 마크다운으로 자유롭게 수정할 수 있습니다.
-                  미리보기 탭에서 실시간으로 확인하며 편집하세요.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-medium text-foreground">
-                  트래픽 데이터는 어떻게 수집되나요?
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  블로그 글 조회수는 자동으로 수집되며 대시보드에서 실시간으로 확인할 수 있습니다.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            </DialogContent>
+          </Dialog>
         </div>
+
+        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="faq">자주 묻는 질문</TabsTrigger>
+            <TabsTrigger value="my-inquiries">내 문의</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="faq" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>자주 묻는 질문</CardTitle>
+                <CardDescription>
+                  일반적인 질문에 대한 답변을 확인하세요
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="single" collapsible className="w-full">
+                  {faqs.map((faq) => (
+                    <AccordionItem key={faq.id} value={faq.id}>
+                      <AccordionTrigger className="text-left">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-gray-600">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="my-inquiries" className="mt-6">
+            <div className="space-y-4">
+              {inquiries.map((inquiry) => (
+                <Card key={inquiry.id}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            variant={
+                              inquiry.status === "answered"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {inquiry.status === "answered" ? (
+                              <span className="flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" />
+                                답변완료
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                대기중
+                              </span>
+                            )}
+                          </Badge>
+                          <Badge variant="outline">{inquiry.category}</Badge>
+                        </div>
+                        <CardTitle>{inquiry.title}</CardTitle>
+                        <CardDescription className="mt-2">
+                          작성일: {inquiry.createdAt}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  {inquiry.answer && (
+                    <CardContent>
+                      <div className="bg-blue-50 p-4 rounded-lg">
+                        <p className="text-blue-900">
+                          <strong>답변:</strong> {inquiry.answer}
+                        </p>
+                      </div>
+                    </CardContent>
+                  )}
+
+                  {inquiry.content && !inquiry.answer && (
+                    <CardContent>
+                      <div className="bg-muted/30 p-4 rounded-lg">
+                        <p className="text-muted-foreground">
+                          {inquiry.content}
+                        </p>
+                      </div>
+                    </CardContent>
+                  )}
+                </Card>
+              ))}
+
+              {inquiries.length === 0 && (
+                <Card>
+                  <CardContent className="py-12 text-center text-gray-500">
+                    아직 문의 내역이 없습니다.
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

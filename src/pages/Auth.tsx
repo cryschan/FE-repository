@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -22,31 +22,43 @@ const CATEGORIES = [
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [category, setCategory] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [shopUrl, setShopUrl] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement login logic
     console.log("Login:", { email, password });
+    try {
+      localStorage.setItem("userEmail", email);
+    } catch {}
+  };
+
+  const toggleCategory = (value: string, checked: boolean) => {
+    setSelectedCategories((prev) =>
+      checked
+        ? Array.from(new Set([...prev, value]))
+        : prev.filter((v) => v !== value)
+    );
   };
 
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement signup logic
-    console.log("Signup:", { email, password, category, shopUrl });
+    console.log("Signup:", {
+      email,
+      password,
+      categories: selectedCategories,
+      shopUrl,
+    });
+    try {
+      localStorage.setItem("userEmail", email);
+    } catch {}
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
+    <div className="bg-gradient-subtle flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
-        <Button variant="ghost" asChild className="mb-4">
-          <Link to="/" className="gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            홈으로 돌아가기
-          </Link>
-        </Button>
-
         <Card className="p-8 shadow-elevated">
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -117,20 +129,25 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">카테고리</Label>
-                  <Select value={category} onValueChange={setCategory} required>
-                    <SelectTrigger id="category">
-                      <SelectValue placeholder="카테고리를 선택하세요" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="space-y-3">
+                  <Label>관심 카테고리 (복수 선택 가능)</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {CATEGORIES.map((cat) => {
+                      const checked = selectedCategories.includes(cat);
+                      return (
+                        <label
+                          key={cat}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(c) => toggleCategory(cat, !!c)}
+                          />
+                          <span className="text-sm text-foreground">{cat}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="shop-url">쇼핑몰 URL</Label>

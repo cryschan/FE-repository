@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Save, Sparkles } from "lucide-react";
@@ -45,8 +51,8 @@ const Editor = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <div className="container mx-auto px-4 py-8 space-y-6">
+    <div className="bg-gradient-subtle">
+      <div className="w-full mx-auto p-8 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <Button variant="ghost" asChild className="gap-2">

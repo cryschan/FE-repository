@@ -22,3 +22,39 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+ 
+# Vite / Build
+.vite
+build
+dist-ssr
+
+# TypeScript
+*.tsbuildinfo
+
+# Node
+node_modules
+.eslintcache
+
+# Package managers
+bun.lockb
+.pnp.*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Coverage / reports
+coverage
+.nyc_output
+
+# Turbo / monorepo tooling
+.turbo
+
+# Deploy/hosting
+.vercel
+.netlify
+
+# OS artifacts
+Thumbs.db
