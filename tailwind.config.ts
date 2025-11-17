@@ -65,17 +65,6 @@ export default {
           "5": "hsl(var(--chart-5))",
         },
       },
-      backgroundImage: {
-        'gradient-primary': 'var(--gradient-primary)',
-        'gradient-subtle': 'var(--gradient-subtle)',
-      },
-      boxShadow: {
-        'elevated': 'var(--shadow-elevated)',
-        'card': 'var(--shadow-card)',
-      },
-      transitionProperty: {
-        'smooth': 'var(--transition-smooth)',
-      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
