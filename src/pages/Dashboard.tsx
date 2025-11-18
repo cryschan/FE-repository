@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,119 +6,114 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, TrendingUp, FileText } from "lucide-react";
+import { FileText, Tag, Globe, Coins } from "lucide-react";
 import {
-  Line,
-  LineChart,
+  Bar,
+  BarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  Bar,
-  BarChart,
+  Pie,
+  PieChart,
+  Cell,
 } from "recharts";
 
-// 지난 7일간 블로그 글 데이터
-const mockArticles = [
+// 관리자 대시보드 - 오늘 작성된 글 데이터 (복붙 버튼 클릭 시 집계)
+const todayArticles = [
   {
     id: 1,
-    title: "여름 남성 반팔 티셔츠 추천 - 시원하고 스타일리시한",
+    userName: "김철수",
+    title: "여름 남성 반팔 티셔츠 추천",
     category: "남성 의류",
     blogs: ["네이버 블로그", "티스토리"],
-    views: 1234,
-    createdAt: "2024-01-15",
-    status: "published",
+    tokensUsed: 1250,
+    createdAt: "2024-01-15 09:30",
   },
   {
     id: 2,
-    title: "메이크업 초보자를 위한 베이스 메이크업 제품 가이드",
+    userName: "이영희",
+    title: "메이크업 초보자 가이드",
     category: "메이크업 제품",
-    blogs: ["티스토리", "미디움", "브런치"],
-    views: 856,
-    createdAt: "2024-01-14",
-    status: "published",
+    blogs: ["티스토리", "미디움"],
+    tokensUsed: 980,
+    createdAt: "2024-01-15 10:15",
   },
   {
     id: 3,
-    title: "편안한 운동화 추천 - 일상에서 신기 좋은",
+    userName: "박민수",
+    title: "편안한 운동화 추천",
     category: "신발",
     blogs: ["네이버 블로그"],
-    views: 2103,
-    createdAt: "2024-01-13",
-    status: "published",
+    tokensUsed: 1100,
+    createdAt: "2024-01-15 11:20",
   },
   {
     id: 4,
-    title: "겨울 패딩 추천 - 따뜻하고 가벼운",
+    userName: "최지은",
+    title: "겨울 패딩 추천",
     category: "여성 의류",
     blogs: ["미디움", "벨로그"],
-    views: 1567,
-    createdAt: "2024-01-12",
-    status: "published",
+    tokensUsed: 1350,
+    createdAt: "2024-01-15 13:45",
   },
   {
     id: 5,
-    title: "스킨케어 루틴 완벽 가이드",
-    category: "뷰티",
-    blogs: ["브런치", "네이버 블로그", "티스토리"],
-    views: 943,
-    createdAt: "2024-01-11",
-    status: "published",
-  },
-  {
-    id: 6,
-    title: "홈 인테리어 소품 추천",
-    category: "생활용품",
-    blogs: ["벨로그", "미디움"],
-    views: 721,
-    createdAt: "2024-01-10",
-    status: "published",
-  },
-  {
-    id: 7,
-    title: "최신 노트북 비교 리뷰",
-    category: "전자제품",
-    blogs: ["티스토리"],
-    views: 1890,
-    createdAt: "2024-01-09",
-    status: "published",
+    userName: "정수진",
+    title: "스킨케어 루틴 가이드",
+    category: "메이크업 제품",
+    blogs: ["브런치", "네이버 블로그"],
+    tokensUsed: 1420,
+    createdAt: "2024-01-15 14:30",
   },
 ];
 
-// 지난 7일간 일별 조회수
-const trafficData = [
-  { date: "1/9", views: 1890 },
-  { date: "1/10", views: 721 },
-  { date: "1/11", views: 943 },
-  { date: "1/12", views: 1567 },
-  { date: "1/13", views: 2103 },
-  { date: "1/14", views: 856 },
-  { date: "1/15", views: 1234 },
+const COLORS = [
+  "#8b5cf6",
+  "#ec4899",
+  "#f59e0b",
+  "#10b981",
+  "#3b82f6",
+  "#6366f1",
+  "#14b8a6",
+  "#f97316",
 ];
 
 const Dashboard = () => {
-  // 전체 조회수
-  const totalViews = mockArticles.reduce(
-    (sum, article) => sum + article.views,
+  // 오늘 작성된 글 수
+  const todayPostCount = todayArticles.length;
+
+  // 총 사용 토큰 수
+  const totalTokens = todayArticles.reduce(
+    (sum, article) => sum + article.tokensUsed,
     0
   );
 
-  // 평균 조회수
-  const avgViews =
-    mockArticles.length > 0 ? Math.round(totalViews / mockArticles.length) : 0;
+  // 카테고리별 글 수
+  const categoryCount = todayArticles.reduce((acc, article) => {
+    acc[article.category] = (acc[article.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
-  // 블로그별 조회수
-  const viewsByBlog = mockArticles.reduce((acc, article) => {
+  const categoryData = Object.entries(categoryCount).map(([name, value]) => ({
+    name,
+    value,
+  }));
+
+  // 블로그 플랫폼별 사용 횟수
+  const blogPlatformCount = todayArticles.reduce((acc, article) => {
     article.blogs.forEach((blog) => {
-      acc[blog] = (acc[blog] || 0) + article.views;
+      acc[blog] = (acc[blog] || 0) + 1;
     });
     return acc;
   }, {} as Record<string, number>);
 
-  const blogViewsData = Object.entries(viewsByBlog).map(([blog, views]) => ({
-    blog,
-    views,
-  }));
+  const blogPlatformData = Object.entries(blogPlatformCount).map(
+    ([platform, count]) => ({
+      platform,
+      count,
+    })
+  );
 
   return (
     <div className="bg-gradient-subtle">
@@ -127,43 +121,30 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">대시보드</h1>
+            <h1 className="text-3xl font-bold text-foreground">
+              관리자 대시보드
+            </h1>
             <p className="text-muted-foreground mt-1">
-              콘텐츠 성과를 한눈에 확인하세요
+              오늘의 콘텐츠 생성 현황을 확인하세요
             </p>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-4">
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                지난 7일 블로그 글
+                오늘 작성된 글
               </CardTitle>
               <FileText className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">
-                {mockArticles.length}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">게시된 글 수</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                전체 조회수
-              </CardTitle>
-              <Eye className="w-4 h-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {totalViews.toLocaleString()}
+                {todayPostCount}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                지난 7일 누적
+                복붙 버튼 클릭 집계
               </p>
             </CardContent>
           </Card>
@@ -171,36 +152,85 @@ const Dashboard = () => {
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                평균 조회수
+                관심 카테고리
               </CardTitle>
-              <TrendingUp className="w-4 h-4 text-muted-foreground" />
+              <Tag className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">
-                {avgViews.toLocaleString()}
+                {Object.keys(categoryCount).length}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">글당 평균</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                사용 중인 카테고리
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                블로그 플랫폼
+              </CardTitle>
+              <Globe className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-foreground">
+                {Object.keys(blogPlatformCount).length}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                사용 중인 플랫폼
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                사용한 토큰 수
+              </CardTitle>
+              <Coins className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-foreground">
+                {totalTokens.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                오늘 총 사용량
+              </p>
             </CardContent>
           </Card>
         </div>
 
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Traffic Chart */}
+          {/* Category Distribution Chart */}
           <Card className="shadow-card">
             <CardHeader>
-              <CardTitle>트래픽 추이</CardTitle>
-              <CardDescription>최근 7일간 일별 조회수</CardDescription>
+              <CardTitle>카테고리별 글 분포</CardTitle>
+              <CardDescription>오늘 작성된 글의 카테고리 분포</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={trafficData}>
-                  <XAxis
-                    dataKey="date"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) =>
+                      `${name} (${(percent * 100).toFixed(0)}%)`
+                    }
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
@@ -208,34 +238,27 @@ const Dashboard = () => {
                       borderRadius: "var(--radius)",
                     }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="views"
-                    stroke="hsl(var(--primary))"
-                    strokeWidth={2}
-                    dot={{ fill: "hsl(var(--primary))" }}
-                  />
-                </LineChart>
+                </PieChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          {/* Blog Views Chart */}
+          {/* Blog Platform Usage Chart */}
           <Card className="shadow-card">
             <CardHeader>
-              <CardTitle>블로그별 조회수</CardTitle>
-              <CardDescription>플랫폼별 조회수 분포</CardDescription>
+              <CardTitle>블로그 플랫폼 사용 현황</CardTitle>
+              <CardDescription>플랫폼별 글 작성 횟수</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={blogViewsData}>
+                <BarChart data={blogPlatformData}>
                   <XAxis
-                    dataKey="blog"
+                    dataKey="platform"
                     stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     angle={-15}
                     textAnchor="end"
-                    height={60}
+                    height={80}
                   />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <Tooltip
@@ -246,7 +269,7 @@ const Dashboard = () => {
                     }}
                   />
                   <Bar
-                    dataKey="views"
+                    dataKey="count"
                     fill="hsl(var(--primary))"
                     radius={[8, 8, 0, 0]}
                   />
@@ -256,24 +279,32 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Recent Articles */}
+        {/* Today's Articles */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle>최근 게시글</CardTitle>
-            <CardDescription>지난 7일간 작성된 블로그 글</CardDescription>
+            <CardTitle>오늘 작성된 글</CardTitle>
+            <CardDescription>복붙 버튼 클릭으로 집계된 글 목록</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {mockArticles.map((article) => (
+              {todayArticles.map((article) => (
                 <div
                   key={article.id}
                   className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-foreground truncate">
-                      {article.title}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-medium text-foreground truncate">
+                        {article.title}
+                      </h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {article.userName}
+                      </Badge>
+                    </div>
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <Badge variant="outline" className="text-xs">
+                        {article.category}
+                      </Badge>
                       {article.blogs.map((blog) => (
                         <Badge key={blog} variant="outline" className="text-xs">
                           {blog}
@@ -285,9 +316,9 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Eye className="w-4 h-4 text-muted-foreground" />
+                    <Coins className="w-4 h-4 text-muted-foreground" />
                     <span className="font-semibold text-foreground">
-                      {article.views.toLocaleString()}
+                      {article.tokensUsed.toLocaleString()}
                     </span>
                   </div>
                 </div>

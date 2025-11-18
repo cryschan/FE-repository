@@ -6,6 +6,7 @@ import {
   User,
   ChevronDown,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -26,9 +27,9 @@ const AppSidebar = () => {
 
   const sections = [
     {
-      label: "대시보드",
-      icon: LayoutDashboard,
-      items: [{ title: "대시보드", to: "/dashboard" }],
+      label: "AI 글쓰기",
+      icon: Sparkles,
+      items: [{ title: "AI 글쓰기 설정", to: "/ai-settings" }],
     },
     {
       label: "블로그 글 관리",
@@ -48,11 +49,14 @@ const AppSidebar = () => {
     {
       label: "관리자",
       icon: ShieldCheck,
-      items: [{ title: "관리자페이지", to: "/admin" }],
+      items: [
+        { title: "대시보드", to: "/dashboard" },
+        { title: "관리자페이지", to: "/admin" },
+      ],
     },
   ];
 
-  const [openSections, setOpenSections] = useState<string[]>(["대시보드"]);
+  const [openSections, setOpenSections] = useState<string[]>(["AI 글쓰기"]);
   const toggleSection = (label: string) => {
     setOpenSections((prev) =>
       prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]

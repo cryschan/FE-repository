@@ -3,15 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -19,27 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ChevronRight, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const CATEGORIES = [
-  "남성 의류",
-  "여성 의류",
-  "생활용품",
-  "신발",
-  "메이크업 제품",
-  "액세서리",
-  "전자제품",
-  "식품",
-];
-
-const BLOG_PLATFORMS = [
-  "네이버 블로그",
-  "티스토리",
-  "미디움",
-  "브런치",
-  "벨로그",
-];
 
 const Auth = () => {
   const { toast } = useToast();
@@ -50,22 +21,17 @@ const Auth = () => {
 
   // 회원가입 모달 상태
   const [signupOpen, setSignupOpen] = useState(false);
-  const [signupStep, setSignupStep] = useState(1);
 
-  // 1단계: 기본 정보
+  // 기본 정보
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [department, setDepartment] = useState("");
 
-  // 2단계: 블로그 프롬프트 설정
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedBlogs, setSelectedBlogs] = useState<string[]>([]);
-  const [shopUrl, setShopUrl] = useState("");
-  const [includeImage, setIncludeImage] = useState(false);
-  const [imageCount, setImageCount] = useState("3");
-  const [wordCount, setWordCount] = useState("500");
+  // 이메일 중복 확인 상태
+  const [emailChecked, setEmailChecked] = useState(false);
+  const [isEmailAvailable, setIsEmailAvailable] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,38 +42,57 @@ const Auth = () => {
     } catch {}
   };
 
-  const toggleCategory = (value: string, checked: boolean) => {
-    setSelectedCategories((prev) =>
-      checked
-        ? Array.from(new Set([...prev, value]))
-        : prev.filter((v) => v !== value)
-    );
-  };
-
-  const toggleBlog = (value: string, checked: boolean) => {
-    setSelectedBlogs((prev) =>
-      checked
-        ? Array.from(new Set([...prev, value]))
-        : prev.filter((v) => v !== value)
-    );
-  };
-
   const resetSignupForm = () => {
-    setSignupStep(1);
     setName("");
     setEmail("");
     setPassword("");
     setConfirmPassword("");
     setDepartment("");
-    setSelectedCategories([]);
-    setSelectedBlogs([]);
-    setShopUrl("");
-    setIncludeImage(false);
-    setImageCount("3");
-    setWordCount("500");
+    setEmailChecked(false);
+    setIsEmailAvailable(false);
   };
 
-  const handleStep1Next = () => {
+  const handleEmailCheck = async () => {
+    if (!email.trim()) {
+      toast({
+        title: "이메일을 입력해주세요",
+        description: "중복 확인할 이메일을 먼저 입력해주세요.",
+      });
+      return;
+    }
+
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "이메일 형식 오류",
+        description: "올바른 이메일 형식을 입력해주세요.",
+      });
+      return;
+    }
+
+    // TODO: API 연동 - 실제로는 서버에 중복 확인 요청
+    // 임시로 랜덤하게 사용 가능/불가능 판단 (실제로는 API 응답 사용)
+    const isAvailable = !email.includes("test@test.com"); // 예시: test@test.com은 중복으로 처리
+
+    setEmailChecked(true);
+    setIsEmailAvailable(isAvailable);
+
+    if (isAvailable) {
+      toast({
+        title: "사용 가능한 이메일입니다",
+        description: "해당 이메일로 회원가입을 진행할 수 있습니다.",
+      });
+    } else {
+      toast({
+        title: "이미 사용 중인 이메일입니다",
+        description: "다른 이메일을 사용해주세요.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSignupComplete = () => {
     if (
       !name.trim() ||
       !email.trim() ||
@@ -118,6 +103,14 @@ const Auth = () => {
       toast({
         title: "입력값을 확인해주세요",
         description: "모든 필드를 입력해야 합니다.",
+      });
+      return;
+    }
+    if (!emailChecked || !isEmailAvailable) {
+      toast({
+        title: "이메일 중복 확인 필요",
+        description: "이메일 중복 확인을 완료해주세요.",
+        variant: "destructive",
       });
       return;
     }
@@ -135,24 +128,6 @@ const Auth = () => {
       });
       return;
     }
-    setSignupStep(2);
-  };
-
-  const handleSignupComplete = () => {
-    if (selectedCategories.length === 0 || selectedBlogs.length === 0) {
-      toast({
-        title: "선택 필요",
-        description: "관심 카테고리와 블로그를 최소 1개 이상 선택해주세요.",
-      });
-      return;
-    }
-    if (!shopUrl.trim()) {
-      toast({
-        title: "입력값을 확인해주세요",
-        description: "쇼핑몰 URL을 입력해주세요.",
-      });
-      return;
-    }
 
     // TODO: Implement signup logic
     console.log("Signup:", {
@@ -160,12 +135,6 @@ const Auth = () => {
       email,
       password,
       department,
-      categories: selectedCategories,
-      blogs: selectedBlogs,
-      shopUrl,
-      includeImage,
-      imageCount: includeImage ? imageCount : null,
-      wordCount,
     });
 
     try {
@@ -174,7 +143,7 @@ const Auth = () => {
 
     toast({
       title: "회원가입 완료",
-      description: "환영합니다! 로그인해주세요.",
+      description: "환영합니다! 로그인 후 AI 글쓰기 설정을 완료해주세요.",
     });
 
     resetSignupForm();
@@ -218,210 +187,111 @@ const Auth = () => {
             <Button type="submit" className="w-full">
               로그인
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => setSignupOpen(true)}
-            >
-              회원가입하기
-            </Button>
           </form>
+
+          <div className="text-center mt-8">
+            <p className="text-sm text-muted-foreground">
+              계정이 없으신가요?{" "}
+              <button
+                type="button"
+                onClick={() => setSignupOpen(true)}
+                className="text-primary hover:underline font-medium"
+              >
+                회원가입하기
+              </button>
+            </p>
+          </div>
         </Card>
       </div>
 
       {/* 회원가입 모달 */}
       <Dialog open={signupOpen} onOpenChange={setSignupOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>회원가입 - {signupStep}/2단계</DialogTitle>
-            <DialogDescription>
-              {signupStep === 1
-                ? "기본 정보를 입력해주세요"
-                : "블로그 프롬프트 설정을 완료해주세요"}
-            </DialogDescription>
+            <DialogTitle>회원가입</DialogTitle>
+            <DialogDescription>기본 정보를 입력해주세요</DialogDescription>
           </DialogHeader>
 
-          {signupStep === 1 ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signup-name">이름</Label>
-                <Input
-                  id="signup-name"
-                  placeholder="홍길동"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-email">이메일</Label>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="signup-name">이름</Label>
+              <Input
+                id="signup-name"
+                placeholder="홍길동"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="signup-email">이메일</Label>
+              <div className="flex gap-2">
                 <Input
                   id="signup-email"
                   type="email"
                   placeholder="your@email.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setEmailChecked(false);
+                    setIsEmailAvailable(false);
+                  }}
+                  className="flex-1"
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-department">부서</Label>
-                <Input
-                  id="signup-department"
-                  placeholder="마케팅팀"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-password">비밀번호</Label>
-                <Input
-                  id="signup-password"
-                  type="password"
-                  placeholder="8자 이상"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="signup-confirm">비밀번호 확인</Label>
-                <Input
-                  id="signup-confirm"
-                  type="password"
-                  placeholder="비밀번호 재입력"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
-              <Button onClick={handleStep1Next} className="w-full gap-2">
-                다음 단계
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <Label>관심 카테고리 (복수 선택)</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {CATEGORIES.map((cat) => {
-                    const checked = selectedCategories.includes(cat);
-                    return (
-                      <label
-                        key={cat}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(c) => toggleCategory(cat, !!c)}
-                        />
-                        <span className="text-sm text-foreground">{cat}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label>포스팅할 블로그 (복수 선택)</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {BLOG_PLATFORMS.map((blog) => {
-                    const checked = selectedBlogs.includes(blog);
-                    return (
-                      <label
-                        key={blog}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(c) => toggleBlog(blog, !!c)}
-                        />
-                        <span className="text-sm text-foreground">{blog}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="shop-url">쇼핑몰 URL</Label>
-                <Input
-                  id="shop-url"
-                  type="url"
-                  placeholder="https://yourshop.com"
-                  value={shopUrl}
-                  onChange={(e) => setShopUrl(e.target.value)}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="include-image">이미지 포함</Label>
-                    <p className="text-sm text-muted-foreground">
-                      블로그 글에 이미지를 포함할지 선택하세요
-                    </p>
-                  </div>
-                  <Switch
-                    id="include-image"
-                    checked={includeImage}
-                    onCheckedChange={setIncludeImage}
-                  />
-                </div>
-
-                {includeImage && (
-                  <div className="space-y-2">
-                    <Label htmlFor="image-count">이미지 개수</Label>
-                    <Select value={imageCount} onValueChange={setImageCount}>
-                      <SelectTrigger id="image-count">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1개</SelectItem>
-                        <SelectItem value="2">2개</SelectItem>
-                        <SelectItem value="3">3개</SelectItem>
-                        <SelectItem value="4">4개</SelectItem>
-                        <SelectItem value="5">5개</SelectItem>
-                        <SelectItem value="6">6개</SelectItem>
-                        <SelectItem value="7">7개</SelectItem>
-                        <SelectItem value="8">8개</SelectItem>
-                        <SelectItem value="9">9개</SelectItem>
-                        <SelectItem value="10">10개</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="word-count">글자수</Label>
-                <Select value={wordCount} onValueChange={setWordCount}>
-                  <SelectTrigger id="word-count">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="500">500자 이하</SelectItem>
-                    <SelectItem value="1000">1000자 이하</SelectItem>
-                    <SelectItem value="1500">1500자 이하</SelectItem>
-                    <SelectItem value="2000">2000자 이하</SelectItem>
-                    <SelectItem value="2500">2500자 이하</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-2">
                 <Button
-                  variant="outline"
-                  onClick={() => setSignupStep(1)}
-                  className="flex-1 gap-2"
+                  type="button"
+                  onClick={handleEmailCheck}
+                  className="whitespace-nowrap bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
-                  <ChevronLeft className="w-4 h-4" />
-                  이전
-                </Button>
-                <Button onClick={handleSignupComplete} className="flex-1">
-                  회원가입 완료
+                  중복확인
                 </Button>
               </div>
+              {emailChecked && (
+                <p
+                  className={`text-sm ${
+                    isEmailAvailable
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {isEmailAvailable
+                    ? "✓ 사용 가능한 이메일입니다"
+                    : "✗ 이미 사용 중인 이메일입니다"}
+                </p>
+              )}
             </div>
-          )}
+            <div className="space-y-2">
+              <Label htmlFor="signup-department">부서</Label>
+              <Input
+                id="signup-department"
+                placeholder="마케팅팀"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="signup-password">비밀번호</Label>
+              <Input
+                id="signup-password"
+                type="password"
+                placeholder="8자 이상"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="signup-confirm">비밀번호 확인</Label>
+              <Input
+                id="signup-confirm"
+                type="password"
+                placeholder="비밀번호 재입력"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+            <Button onClick={handleSignupComplete} className="w-full">
+              회원가입
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
