@@ -10,6 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = ["패션", "뷰티", "가전", "스포츠", "식품", "생활", "도서"];
@@ -28,9 +36,13 @@ const Profile = () => {
   // 프로필 정보 상태
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [department, setDepartment] = useState("");
   const [shopUrl, setShopUrl] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedBlogs, setSelectedBlogs] = useState<string[]>([]);
+  const [includeImage, setIncludeImage] = useState(false);
+  const [imageCount, setImageCount] = useState("3");
+  const [wordCount, setWordCount] = useState("500");
 
   // 비밀번호 변경 상태
   const [currentPassword, setCurrentPassword] = useState("");
@@ -153,6 +165,16 @@ const Profile = () => {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="department">부서</Label>
+                <Input
+                  id="department"
+                  placeholder="마케팅팀"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="shopUrl">쇼핑몰 URL</Label>
                 <Input
                   id="shopUrl"
@@ -202,6 +224,67 @@ const Profile = () => {
                       </label>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className="border-t pt-4 space-y-4">
+                <h2 className="text-xl font-semibold text-foreground">
+                  블로그 프롬프트 설정
+                </h2>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="profile-include-image">이미지 포함</Label>
+                      <p className="text-sm text-muted-foreground">
+                        블로그 글에 이미지를 포함할지 선택하세요
+                      </p>
+                    </div>
+                    <Switch
+                      id="profile-include-image"
+                      checked={includeImage}
+                      onCheckedChange={setIncludeImage}
+                    />
+                  </div>
+
+                  {includeImage && (
+                    <div className="space-y-2">
+                      <Label htmlFor="profile-image-count">이미지 개수</Label>
+                      <Select value={imageCount} onValueChange={setImageCount}>
+                        <SelectTrigger id="profile-image-count">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1개</SelectItem>
+                          <SelectItem value="2">2개</SelectItem>
+                          <SelectItem value="3">3개</SelectItem>
+                          <SelectItem value="4">4개</SelectItem>
+                          <SelectItem value="5">5개</SelectItem>
+                          <SelectItem value="6">6개</SelectItem>
+                          <SelectItem value="7">7개</SelectItem>
+                          <SelectItem value="8">8개</SelectItem>
+                          <SelectItem value="9">9개</SelectItem>
+                          <SelectItem value="10">10개</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="profile-word-count">글자수</Label>
+                  <Select value={wordCount} onValueChange={setWordCount}>
+                    <SelectTrigger id="profile-word-count">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="500">500자 이하</SelectItem>
+                      <SelectItem value="1000">1000자 이하</SelectItem>
+                      <SelectItem value="1500">1500자 이하</SelectItem>
+                      <SelectItem value="2000">2000자 이하</SelectItem>
+                      <SelectItem value="2500">2500자 이하</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
