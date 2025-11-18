@@ -14,6 +14,14 @@ import { useToast } from "@/hooks/use-toast";
 
 const CATEGORIES = ["패션", "뷰티", "가전", "스포츠", "식품", "생활", "도서"];
 
+const BLOG_PLATFORMS = [
+  "네이버 블로그",
+  "티스토리",
+  "미디움",
+  "브런치",
+  "벨로그",
+];
+
 const Profile = () => {
   const { toast } = useToast();
 
@@ -22,6 +30,7 @@ const Profile = () => {
   const [email, setEmail] = useState("");
   const [shopUrl, setShopUrl] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedBlogs, setSelectedBlogs] = useState<string[]>([]);
 
   // 비밀번호 변경 상태
   const [currentPassword, setCurrentPassword] = useState("");
@@ -30,6 +39,14 @@ const Profile = () => {
 
   const toggleCategory = (value: string, checked: boolean) => {
     setSelectedCategories((prev) =>
+      checked
+        ? Array.from(new Set([...prev, value]))
+        : prev.filter((v) => v !== value)
+    );
+  };
+
+  const toggleBlog = (value: string, checked: boolean) => {
+    setSelectedBlogs((prev) =>
       checked
         ? Array.from(new Set([...prev, value]))
         : prev.filter((v) => v !== value)
@@ -114,7 +131,7 @@ const Profile = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleProfileSave} className="space-y-6">
+            <form onSubmit={handleProfileSave} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">이름</Label>
                 <Input
@@ -161,6 +178,27 @@ const Profile = () => {
                           onCheckedChange={(c) => toggleCategory(cat, !!c)}
                         />
                         <span className="text-sm text-foreground">{cat}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label>포스팅할 블로그</Label>
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {BLOG_PLATFORMS.map((blog) => {
+                    const checked = selectedBlogs.includes(blog);
+                    return (
+                      <label
+                        key={blog}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(c) => toggleBlog(blog, !!c)}
+                        />
+                        <span className="text-sm text-foreground">{blog}</span>
                       </label>
                     );
                   })}

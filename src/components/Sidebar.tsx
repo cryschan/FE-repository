@@ -74,7 +74,7 @@ const AppSidebar = () => {
               className="w-full h-full object-cover rounded-lg"
             />
           </div>
-          <span className="text-lg font-bold">Happy Coding</span>
+          <span className="text-lg font-bold">Merry Christmas</span>
         </div>
       </SidebarHeader>
       <SidebarContent>

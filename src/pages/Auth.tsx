@@ -19,10 +19,19 @@ const CATEGORIES = [
   "식품",
 ];
 
+const BLOG_PLATFORMS = [
+  "네이버 블로그",
+  "티스토리",
+  "미디움",
+  "브런치",
+  "벨로그",
+];
+
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedBlogs, setSelectedBlogs] = useState<string[]>([]);
   const [shopUrl, setShopUrl] = useState("");
 
   const handleLogin = (e: React.FormEvent) => {
@@ -42,6 +51,14 @@ const Auth = () => {
     );
   };
 
+  const toggleBlog = (value: string, checked: boolean) => {
+    setSelectedBlogs((prev) =>
+      checked
+        ? Array.from(new Set([...prev, value]))
+        : prev.filter((v) => v !== value)
+    );
+  };
+
   const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement signup logic
@@ -49,6 +66,7 @@ const Auth = () => {
       email,
       password,
       categories: selectedCategories,
+      blogs: selectedBlogs,
       shopUrl,
     });
     try {
@@ -144,6 +162,28 @@ const Auth = () => {
                             onCheckedChange={(c) => toggleCategory(cat, !!c)}
                           />
                           <span className="text-sm text-foreground">{cat}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <Label>포스팅할 블로그 (복수 선택 가능)</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {BLOG_PLATFORMS.map((blog) => {
+                      const checked = selectedBlogs.includes(blog);
+                      return (
+                        <label
+                          key={blog}
+                          className="flex items-center gap-2 cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(c) => toggleBlog(blog, !!c)}
+                          />
+                          <span className="text-sm text-foreground">
+                            {blog}
+                          </span>
                         </label>
                       );
                     })}
