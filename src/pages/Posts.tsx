@@ -212,6 +212,7 @@ const Posts = () => {
         toast({
           title: "저장 및 복사 완료",
           description: "게시글이 수정되고 클립보드에 복사되었습니다.",
+          variant: "success",
         });
       } catch (error) {
         toast({

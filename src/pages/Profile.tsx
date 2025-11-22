@@ -60,6 +60,7 @@ const Profile = () => {
     toast({
       title: "프로필이 저장되었습니다",
       description: "변경사항이 성공적으로 적용되었습니다.",
+    variant: "success",
     });
   };
 
@@ -104,6 +105,7 @@ const Profile = () => {
     toast({
       title: "비밀번호가 변경되었습니다",
       description: "다음 로그인부터 적용됩니다.",
+    variant: "success",
     });
   };
 

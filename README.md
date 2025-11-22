@@ -25,7 +25,8 @@
 
 ### 상태 관리 & 데이터
 
-- **TanStack React Query 5.83.0** - 서버 상태 관리
+- **TanStack React Query 5.83.0** - 서버 상태 관리 (캐싱, 자동 재검증)
+- **ky 1.7.3** - HTTP 클라이언트 (Axios보다 가볍고 빠른 성능)
 - **Sonner** - 토스트 알림
 
 ### UI/UX
@@ -62,7 +63,11 @@ nvm use
 # 4. 의존성 설치
 npm install
 
-# 5. 개발 서버 실행
+# 5. 환경 변수 설정
+cp .env.example .env
+# .env 파일을 열어서 API URL을 설정하세요
+
+# 6. 개발 서버 실행
 npm run dev
 ```
 
@@ -86,14 +91,30 @@ src/
 │   └── NotFound.tsx    # 404 페이지
 ├── hooks/              # 커스텀 훅
 ├── lib/                # 유틸리티 함수
+│   ├── api.ts          # API 통신 공통 함수
+│   └── utils.ts        # 기타 유틸리티
 ├── App.tsx             # 앱 라우팅
 └── main.tsx            # 진입점
 ```
+
+## 🌐 환경 변수
+
+프로젝트는 다음 환경 변수를 사용합니다:
+
+| 변수명              | 설명                | 기본값                  |
+| ------------------- | ------------------- | ----------------------- |
+| `VITE_API_BASE_URL` | 백엔드 API 서버 URL | `http://localhost:8080` |
+
+`.env.example` 파일을 복사하여 `.env` 파일을 생성하고 필요한 값을 설정하세요.
 
 ## 🔐 인증 및 권한
 
 - 일반 사용자: 대시보드, 블로그 글 관리, 고객 지원, 내 정보 수정
 - 관리자: 추가로 관리자페이지 접근 (문의 관리)
+
+## 📖 추가 문서
+
+- [React Query 사용 가이드](./REACT_QUERY_GUIDE.md) - TanStack React Query 활용 방법 및 API 연동 가이드
 
 ## 📝 라이선스
 

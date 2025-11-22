@@ -98,6 +98,7 @@ const AISettings = () => {
     toast({
       title: "설정이 저장되었습니다",
       description: "AI 글쓰기 설정이 성공적으로 저장되었습니다.",
+      variant: "success",
     });
   };
 
@@ -107,13 +108,13 @@ const AISettings = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">AI 글쓰기 설정</h1>
           <p className="text-muted-foreground mt-1">
-            블로그 콘텐츠 자동 생성을 위한 프롬프트를 설정하세요
+            블로그 콘텐츠 자동 생성을 위한 템플릿을 설정하세요
           </p>
         </div>
 
         <Card className="shadow-elevated max-w-4xl">
           <CardHeader>
-            <CardTitle>블로그 프롬프트 설정</CardTitle>
+            <CardTitle>블로그 템플릿 설정</CardTitle>
             <CardDescription>
               AI가 블로그 글을 생성할 때 사용할 설정을 지정하세요
             </CardDescription>
