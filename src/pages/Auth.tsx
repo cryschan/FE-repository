@@ -63,8 +63,13 @@ const Auth = () => {
     };
 
     try {
-      await loginMutation.mutateAsync(loginData);
+      const result = await loginMutation.mutateAsync(loginData);
       localStorage.setItem("userEmail", loginEmail);
+      try {
+        if (result?.username) {
+          localStorage.setItem("userName", result.username);
+        }
+      } catch {}
       // 로그인 성공 시 루트로 이동
       setTimeout(() => {
         navigate("/", { replace: true });

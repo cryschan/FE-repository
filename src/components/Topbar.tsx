@@ -3,13 +3,17 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const Topbar = () => {
   const [email, setEmail] = useState<string>("");
+  const [name, setName] = useState<string>("");
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("userEmail") || "";
-      setEmail(stored);
+      const storedEmail = localStorage.getItem("userEmail") || "";
+      const storedName = localStorage.getItem("userName") || "";
+      setEmail(storedEmail);
+      setName(storedName);
     } catch {
       setEmail("");
+      setName("");
     }
   }, []);
 
@@ -20,7 +24,7 @@ const Topbar = () => {
       </div>
       <div className="flex items-center gap-3">
         <span className="text-sm text-foreground">
-          {email || "user@example.com"}
+          {name ? `👋🏻 안녕하세요, ${name}님` : email || "user@example.com"}
         </span>
       </div>
     </div>
