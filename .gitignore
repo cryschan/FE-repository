@@ -58,3 +58,7 @@ coverage
 
 # OS artifacts
 Thumbs.db
+
+# Build analysis reports
+stats.html
+stats-*.html

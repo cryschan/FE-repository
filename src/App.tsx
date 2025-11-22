@@ -2,13 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -18,6 +12,7 @@ import Posts from "./pages/Posts";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import AISettings from "./pages/AISettings";
+import { RequireAuth, PublicOnly, RequireAdmin } from "@/routes/guards";
 
 // QueryClient 설정 최적화
 const queryClient = new QueryClient({
@@ -34,35 +29,6 @@ const queryClient = new QueryClient({
     },
   },
 });
-
-// 인증 가드
-const RequireAuth = ({ children }: { children: JSX.Element }) => {
-  const location = useLocation();
-  let isAuthed = false;
-  try {
-    isAuthed = !!localStorage.getItem("authToken");
-  } catch {
-    isAuthed = false;
-  }
-  if (!isAuthed) {
-    return <Navigate to="/auth" replace state={{ from: location }} />;
-  }
-  return children;
-};
-
-// 로그인 사용자는 공개 페이지 접근시 메인으로
-const PublicOnly = ({ children }: { children: JSX.Element }) => {
-  let isAuthed = false;
-  try {
-    isAuthed = !!localStorage.getItem("authToken");
-  } catch {
-    isAuthed = false;
-  }
-  if (isAuthed) {
-    return <Navigate to="/" replace />;
-  }
-  return children;
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -94,8 +60,22 @@ const App = () => (
             <Route path="/posts" element={<Posts />} />
             <Route path="/support" element={<Support />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAdmin>
+                  <Dashboard />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <RequireAdmin>
+                  <Admin />
+                </RequireAdmin>
+              }
+            />
           </Route>
 
           {/* 전역 404 (공개) */}

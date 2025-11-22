@@ -78,6 +78,10 @@ export const useLoginMutation = () => {
         role: data.role,
       };
       queryClient.setQueryData(queryKeys.auth.user, user);
+      // 로컬 스토리지에 역할 저장 (사이드바 표시/가드에 사용)
+      try {
+        localStorage.setItem("userRole", data.role || "");
+      } catch {}
       toast({
         title: "로그인 성공",
         description: `환영합니다, ${data.username}님!`,
