@@ -115,12 +115,12 @@ open -a "Google Chrome" stats.html
   - `GITHUB_TOKEN`: GitHub가 자동 제공 (PR 코멘트 권한)
   - `OPENAI_API_KEY`: OpenAI API 키 (조직 시크릿 사용 가능)
   - `LANGUAGE`: Korean
-  - `MODEL`: gpt-4o-mini
+  - `MODEL`: Repository variables의 `MODEL` 값을 우선 사용하고, 없으면 `gpt-4o-mini`를 기본값으로 사용
 
 설정 방법
 
 - GitHub 시크릿에 `OPENAI_API_KEY` 추가 (Organization 또는 Repository Secret)
-- 필요 시 모델 교체: 워크플로우의 `MODEL` 값을 수정
+- 모델 교체: Repository Variables에 `MODEL` 변경해 원하는 모델로 지정
 
 ## 📝 라이선스
 
