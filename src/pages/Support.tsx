@@ -153,6 +153,7 @@ const Support = () => {
     toast({
       title: "문의가 접수되었습니다",
       description: "빠른 시일 내에 답변 드리겠습니다.",
+    variant: "success",
     });
     resetForm();
     setOpen(false);

@@ -42,10 +42,10 @@ export const useSignupMutation = () => {
   return useMutation({
     mutationFn: (data: SignupRequest) => signup(data),
     onSuccess: (data: SignupResponse) => {
-      console.log("Signup successful:", data);
       toast({
         title: "회원가입 완료",
         description: "환영합니다! 로그인 후 AI 글쓰기 설정을 완료해주세요.",
+        variant: "success",
       });
     },
     onError: async (error: unknown) => {
@@ -69,11 +69,19 @@ export const useLoginMutation = () => {
   return useMutation({
     mutationFn: (data: LoginRequest) => login(data),
     onSuccess: (data: LoginResponse) => {
-      // 사용자 정보를 캐시에 저장
-      queryClient.setQueryData(queryKeys.auth.user, data.user);
+      // 사용자 정보를 캐시에 저장 (응답 스키마에 맞춰 정규화)
+      const user = {
+        userId: data.userId,
+        email: data.email,
+        username: data.username,
+        createdAt: data.createdAt,
+        role: data.role,
+      };
+      queryClient.setQueryData(queryKeys.auth.user, user);
       toast({
         title: "로그인 성공",
-        description: `환영합니다, ${data.user.username}님!`,
+        description: `환영합니다, ${data.username}님!`,
+        variant: "success",
       });
     },
     onError: async (error: unknown) => {
@@ -163,6 +171,7 @@ export const useCreatePostMutation = () => {
       toast({
         title: "게시글 생성 완료",
         description: "새 게시글이 성공적으로 생성되었습니다.",
+        variant: "success",
       });
     },
     onError: async (error: unknown) => {
@@ -203,6 +212,7 @@ export const useUpdatePostMutation = () => {
       toast({
         title: "게시글 수정 완료",
         description: "게시글이 성공적으로 수정되었습니다.",
+        variant: "success",
       });
     },
     onError: async (error: unknown) => {
@@ -255,6 +265,7 @@ export const useUpdateProfileMutation = () => {
       toast({
         title: "프로필 수정 완료",
         description: "프로필 정보가 성공적으로 수정되었습니다.",
+        variant: "success",
       });
     },
     onError: async (error: unknown) => {

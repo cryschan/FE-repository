@@ -123,6 +123,7 @@ const Admin = () => {
     toast({
       title: "답변이 저장되었습니다",
       description: "문의 상태가 답변완료로 변경되었습니다.",
+      variant: "success",
     });
     setOpen(false);
     setActive(null);

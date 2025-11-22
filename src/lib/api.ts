@@ -1,7 +1,9 @@
 import ky from "ky";
 
 // API 기본 설정
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+// 개발 환경에서는 Vite proxy를 사용하도록 기본값을 빈 문자열로 설정
+const API_BASE_URL =
+  import.meta.env.DEV ? "" : (import.meta.env.VITE_API_BASE_URL || "");
 
 // ky 인스턴스 생성
 export const api = ky.create({
@@ -47,11 +49,11 @@ export type SignupRequest = {
 
 // 회원가입 응답
 export type SignupResponse = {
-  id: string;
-  username: string;
+  userId: number;
   email: string;
-  department: string;
+  username: string;
   createdAt: string;
+  role: string;
 };
 
 // 로그인 요청
@@ -62,13 +64,12 @@ export type LoginRequest = {
 
 // 로그인 응답
 export type LoginResponse = {
+  userId: number;
+  email: string;
+  username: string;
+  createdAt: string;
+  role: string;
   token: string;
-  user: {
-    id: string;
-    username: string;
-    email: string;
-    department: string;
-  };
 };
 
 // 이메일 중복 확인 응답
