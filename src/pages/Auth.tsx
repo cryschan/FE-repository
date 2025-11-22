@@ -11,9 +11,16 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useSignupMutation, useLoginMutation, useEmailCheckMutation } from "@/lib/queries";
+import type { SignupRequest, LoginRequest } from "@/lib/api";
 
 const Auth = () => {
   const { toast } = useToast();
+
+  // React Query Mutations
+  const signupMutation = useSignupMutation();
+  const loginMutation = useLoginMutation();
+  const emailCheckMutation = useEmailCheckMutation();
 
   // 로그인 상태
   const [loginEmail, setLoginEmail] = useState("");
@@ -33,13 +40,29 @@ const Auth = () => {
   const [emailChecked, setEmailChecked] = useState(false);
   const [isEmailAvailable, setIsEmailAvailable] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement login logic
-    console.log("Login:", { email: loginEmail, password: loginPassword });
+
+    if (!loginEmail.trim() || !loginPassword) {
+      toast({
+        title: "입력값을 확인해주세요",
+        description: "이메일과 비밀번호를 모두 입력해야 합니다.",
+      });
+      return;
+    }
+
+    const loginData: LoginRequest = {
+      email: loginEmail.trim(),
+      password: loginPassword,
+    };
+
     try {
+      await loginMutation.mutateAsync(loginData);
       localStorage.setItem("userEmail", loginEmail);
-    } catch {}
+      // 로그인 성공 시 리다이렉트 등 추가 로직
+    } catch (error) {
+      // 에러는 mutation의 onError에서 처리됨
+    }
   };
 
   const resetSignupForm = () => {
@@ -71,28 +94,18 @@ const Auth = () => {
       return;
     }
 
-    // TODO: API 연동 - 실제로는 서버에 중복 확인 요청
-    // 임시로 랜덤하게 사용 가능/불가능 판단 (실제로는 API 응답 사용)
-    const isAvailable = !email.includes("test@test.com"); // 예시: test@test.com은 중복으로 처리
-
-    setEmailChecked(true);
-    setIsEmailAvailable(isAvailable);
-
-    if (isAvailable) {
-      toast({
-        title: "사용 가능한 이메일입니다",
-        description: "해당 이메일로 회원가입을 진행할 수 있습니다.",
-      });
-    } else {
-      toast({
-        title: "이미 사용 중인 이메일입니다",
-        description: "다른 이메일을 사용해주세요.",
-        variant: "destructive",
-      });
+    try {
+      const response = await emailCheckMutation.mutateAsync(email);
+      setEmailChecked(true);
+      setIsEmailAvailable(response.available);
+    } catch (error) {
+      // 에러는 mutation의 onError에서 처리됨
+      setEmailChecked(false);
+      setIsEmailAvailable(false);
     }
   };
 
-  const handleSignupComplete = () => {
+  const handleSignupComplete = async () => {
     if (
       !name.trim() ||
       !email.trim() ||
@@ -129,25 +142,25 @@ const Auth = () => {
       return;
     }
 
-    // TODO: Implement signup logic
-    console.log("Signup:", {
-      name,
-      email,
-      password,
-      department,
-    });
+    const signupData: SignupRequest = {
+      username: name.trim(),
+      email: email.trim(),
+      department: department.trim(),
+      password: password,
+    };
 
     try {
-      localStorage.setItem("userEmail", email);
-    } catch {}
+      await signupMutation.mutateAsync(signupData);
+      
+      try {
+        localStorage.setItem("userEmail", email);
+      } catch {}
 
-    toast({
-      title: "회원가입 완료",
-      description: "환영합니다! 로그인 후 AI 글쓰기 설정을 완료해주세요.",
-    });
-
-    resetSignupForm();
-    setSignupOpen(false);
+      resetSignupForm();
+      setSignupOpen(false);
+    } catch (error) {
+      // 에러는 mutation의 onError에서 처리됨
+    }
   };
 
   return (
@@ -184,8 +197,12 @@ const Auth = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full">
-              로그인
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={loginMutation.isPending}
+            >
+              {loginMutation.isPending ? "로그인 중..." : "로그인"}
             </Button>
           </form>
 
@@ -240,9 +257,10 @@ const Auth = () => {
                 <Button
                   type="button"
                   onClick={handleEmailCheck}
+                  disabled={emailCheckMutation.isPending}
                   className="whitespace-nowrap bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 >
-                  중복확인
+                  {emailCheckMutation.isPending ? "확인중..." : "중복확인"}
                 </Button>
               </div>
               {emailChecked && (
@@ -288,8 +306,12 @@ const Auth = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
-            <Button onClick={handleSignupComplete} className="w-full">
-              회원가입
+            <Button 
+              onClick={handleSignupComplete} 
+              className="w-full"
+              disabled={signupMutation.isPending}
+            >
+              {signupMutation.isPending ? "회원가입 중..." : "회원가입"}
             </Button>
           </div>
         </DialogContent>

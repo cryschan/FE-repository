@@ -13,7 +13,21 @@ import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import AISettings from "./pages/AISettings";
 
-const queryClient = new QueryClient();
+// QueryClient 설정 최적화
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1 * 60 * 1000, // 1분 - 데이터가 신선한 상태로 유지되는 시간
+      gcTime: 5 * 60 * 1000, // 5분 - 캐시가 메모리에 유지되는 시간 (구 cacheTime)
+      retry: 1, // 실패 시 1번만 재시도
+      refetchOnWindowFocus: false, // 윈도우 포커스 시 자동 재요청 비활성화
+      refetchOnReconnect: true, // 네트워크 재연결 시 자동 재요청
+    },
+    mutations: {
+      retry: 0, // Mutation은 재시도하지 않음
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
