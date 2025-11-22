@@ -1,15 +1,22 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import {
   signup,
   login,
   checkEmailAvailability,
   getErrorMessage,
+  getMyBlogs,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
   type LoginResponse,
   type EmailCheckResponse,
+  type BlogsMyResponse,
 } from "./api";
 
 // ===== Query Keys =====
@@ -21,6 +28,9 @@ export const queryKeys = {
   posts: {
     all: ["posts"] as const,
     detail: (id: string) => ["posts", id] as const,
+  },
+  blogs: {
+    my: (page: number) => ["blogs", "my", page] as const,
   },
   profile: {
     me: ["profile", "me"] as const,
@@ -137,55 +147,15 @@ export const useEmailCheckMutation = () => {
   });
 };
 
-// ===== 사용 예시 (다른 페이지에서 사용할 수 있는 패턴) =====
-
 /**
- * 게시글 목록 조회 Query (예시)
- * 실제 API가 구현되면 사용
+ * 내 블로그 글 조회 (페이지)
  */
-export const usePostsQuery = () => {
+export const useMyBlogsQuery = (page: number) => {
   return useQuery({
-    queryKey: queryKeys.posts.all,
-    queryFn: async () => {
-      // TODO: 실제 API 호출로 교체
-      // return api.get("api/posts").json();
-      return [];
-    },
-    staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
-    enabled: false, // 실제 API 구현 전까지 비활성화
-  });
-};
-
-/**
- * 게시글 생성 Mutation (예시)
- */
-export const useCreatePostMutation = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: { title: string; content: string }) => {
-      // TODO: 실제 API 호출로 교체
-      // return api.post("api/posts", { json: data }).json();
-      return data;
-    },
-    onSuccess: () => {
-      // 게시글 목록 캐시 무효화 (새로고침)
-      queryClient.invalidateQueries({ queryKey: queryKeys.posts.all });
-      toast({
-        title: "게시글 생성 완료",
-        description: "새 게시글이 성공적으로 생성되었습니다.",
-        variant: "success",
-      });
-    },
-    onError: async (error: unknown) => {
-      const errorMessage = await getErrorMessage(error);
-      toast({
-        title: "게시글 생성 실패",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
+    queryKey: queryKeys.blogs.my(page),
+    queryFn: (): Promise<BlogsMyResponse> => getMyBlogs(page),
+    staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 };
 

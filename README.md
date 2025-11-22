@@ -105,6 +105,23 @@ open -a "Google Chrome" stats.html
 
 - [React Query 사용 가이드](./REACT_QUERY_GUIDE.md) - TanStack React Query 활용 방법 및 API 연동 가이드
 
+## 🤖 자동 PR 코드리뷰 (ChatGPT)
+
+이 저장소는 PR이 생성/업데이트될 때 ChatGPT로 자동 코드리뷰를 남깁니다.
+
+- 워크플로우 파일: `.github/workflows/code_review_from_chatgpt.yml`
+- 트리거: `pull_request` 이벤트의 `opened`, `synchronize`
+- 환경 변수
+  - `GITHUB_TOKEN`: GitHub가 자동 제공 (PR 코멘트 권한)
+  - `OPENAI_API_KEY`: OpenAI API 키 (조직 시크릿 사용 가능)
+  - `LANGUAGE`: Korean
+  - `MODEL`: Repository variables의 `MODEL` 값을 우선 사용하고, 없으면 `gpt-4o-mini`를 기본값으로 사용
+
+설정 방법
+
+- GitHub 시크릿에 `OPENAI_API_KEY` 추가 (Organization 또는 Repository Secret)
+- 모델 교체: Repository Variables에 `MODEL` 변경해 원하는 모델로 지정
+
 ## 📝 라이선스
 
 이 프로젝트는 교육 목적으로 제작되었습니다.
