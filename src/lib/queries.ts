@@ -4,12 +4,14 @@ import {
   signup,
   login,
   checkEmailAvailability,
+  getDashboard,
   getErrorMessage,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
   type LoginResponse,
   type EmailCheckResponse,
+  type DashboardResponse,
 } from "./api";
 
 // ===== Query Keys =====
@@ -280,5 +282,18 @@ export const useUpdateProfileMutation = () => {
         variant: "destructive",
       });
     },
+  });
+};
+
+// ===== Dashboard Query =====
+
+/**
+ * Dashboard 데이터 조회 Query
+ */
+export const useDashboardQuery = () => {
+  return useQuery({
+    queryKey: queryKeys.admin.dashboard,
+    queryFn: () => getDashboard(),
+    staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
   });
 };

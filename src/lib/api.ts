@@ -78,6 +78,21 @@ export type EmailCheckResponse = {
   message: string;
 };
 
+// Dashboard 응답
+export type DashboardResponse = {
+  activeUserCount: number;
+  todayBlogCount: number;
+  totalBlogCount: number;
+  categoryDistribution: Record<string, number>;
+  platformUsage: Record<string, number>;
+  todayBlogItemList: Array<{
+    title: string;
+    platform: string;
+    createdAt: string;
+  }>;
+  totalTokenUsage: number;
+};
+
 // ===== API 함수 =====
 
 /**
@@ -120,6 +135,14 @@ export const checkEmailAvailability = async (email: string): Promise<EmailCheckR
 export const logout = () => {
   localStorage.removeItem("authToken");
   window.location.href = "/auth";
+};
+
+/**
+ * Dashboard 데이터 조회 API
+ * @returns 대시보드 통계 데이터
+ */
+export const getDashboard = async (): Promise<DashboardResponse> => {
+  return api.get("api/dashboard").json<DashboardResponse>();
 };
 
 // ===== 에러 핸들링 유틸리티 =====
