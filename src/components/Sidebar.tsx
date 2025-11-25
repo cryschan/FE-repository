@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   Sidebar as ShadcnSidebar,
@@ -14,6 +14,9 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar";
 import { SECTIONS } from "@/constants/sections";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { logout } from "@/lib/api";
 
 const AppSidebar = () => {
   const location = useLocation();
@@ -22,6 +25,7 @@ const AppSidebar = () => {
 
   const [openSections, setOpenSections] = useState<string[]>(["AI 글쓰기"]);
   const [role, setRole] = useState<string>("");
+  const { toast } = useToast();
 
   useEffect(() => {
     try {
@@ -103,7 +107,26 @@ const AppSidebar = () => {
             );
           })}
       </SidebarContent>
-      <SidebarFooter />
+      <SidebarFooter className="px-0">
+        <div className="p-0">
+          <Button
+            variant="link"
+            className="w-full justify-start gap-2 bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            onClick={() => {
+              // 안내 토스트 후 2초 뒤 이동
+              toast({
+                title: "로그아웃 되었습니다",
+                description: "로그인 페이지로 이동하겠습니다.",
+                variant: "success",
+              });
+              logout();
+            }}
+          >
+            <LogOut className="h-4 w-4" />
+            로그아웃
+          </Button>
+        </div>
+      </SidebarFooter>
     </ShadcnSidebar>
   );
 };

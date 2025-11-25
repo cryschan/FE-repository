@@ -194,8 +194,17 @@ export const getMyBlogs = async (
  * 로그아웃 (클라이언트 측)
  */
 export const logout = () => {
-  localStorage.removeItem("authToken");
-  window.location.href = "/auth";
+  try {
+    // 토큰 및 사용자 정보 제거
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userRole");
+  } catch {}
+
+  setTimeout(() => {
+    window.location.href = "/auth";
+  }, 2000);
 };
 
 /**
