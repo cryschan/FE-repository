@@ -8,7 +8,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { FileText, Coins, Users } from "lucide-react";
 import { useDashboardQuery } from "@/lib/queries";
-import { useMemo } from "react";
 import {
   Bar,
   BarChart,
@@ -60,26 +59,36 @@ const Dashboard = () => {
   // 오늘 작성된 글 목록
   const todayBlogList = dashboardData?.todayBlogItemList ?? [];
 
-  // 카테고리별 글 분포 (차트용) - useMemo로 최적화
-  const categoryData = useMemo(() => {
-    const categoryDistribution = dashboardData?.categoryDistribution ?? {};
-    return Object.entries(categoryDistribution).map(([name, value]) => ({
+  // 카테고리별 글 분포 (차트용)
+  const categoryData = Object.entries(dashboardData?.categoryDistribution ?? {}).map(
+    ([name, value]) => ({
       name,
       value,
-    }));
-  }, [dashboardData?.categoryDistribution]);
+    })
+  );
 
-  // 블로그 플랫폼별 사용 횟수 (차트용) - useMemo로 최적화
-  const blogPlatformData = useMemo(() => {
-    const platformUsage = dashboardData?.platformUsage ?? {};
-    return Object.entries(platformUsage).map(([platform, count]) => ({
+  // 블로그 플랫폼별 사용 횟수 (차트용)
+  const blogPlatformData = Object.entries(dashboardData?.platformUsage ?? {}).map(
+    ([platform, count]) => ({
       platform,
       count,
-    }));
-  }, [dashboardData?.platformUsage]);
+    })
+  );
 
   // 에러 상태 처리
   if (isError) {
+    // 에러 로깅
+    if (import.meta.env.DEV) {
+      console.error("[Dashboard Component Error]", {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    } else {
+      // 프로덕션: 기본 로깅만
+      console.error("[Dashboard Component Error]", error instanceof Error ? error.message : "Unknown error");
+    }
+
     return (
       <div className="bg-gradient-subtle">
         <div className="w-full mx-auto p-8">

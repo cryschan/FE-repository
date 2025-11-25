@@ -295,5 +295,7 @@ export const useDashboardQuery = () => {
     queryKey: queryKeys.admin.dashboard,
     queryFn: () => getDashboard(),
     staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
+    retry: 2, // 네트워크 에러 시 최대 2회 재시도
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 지수 백오프 (최대 30초)
   });
 };
