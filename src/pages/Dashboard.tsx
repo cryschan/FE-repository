@@ -48,32 +48,37 @@ const formatDate = (dateString: string): string => {
 
 const Dashboard = () => {
   // Dashboard API 데이터 조회
-  const { data: dashboardData, isLoading, isError, error } = useDashboardQuery();
+  const {
+    data: dashboardData,
+    isLoading,
+    isError,
+    error,
+  } = useDashboardQuery();
 
   // 통계 카드 데이터
   const todayPostCount = dashboardData?.todayBlogCount ?? 0;
   const activeUserCount = dashboardData?.activeUserCount ?? 0;
   const totalBlogCount = dashboardData?.totalBlogCount ?? 0;
   const totalTokens = dashboardData?.totalTokenUsage ?? 0;
-  
+
   // 오늘 작성된 글 목록
   const todayBlogList = dashboardData?.todayBlogItemList ?? [];
 
   // 카테고리별 글 분포 (차트용)
-  const categoryData = Object.entries(dashboardData?.categoryDistribution ?? {}).map(
-    ([name, value]) => ({
-      name,
-      value,
-    })
-  );
+  const categoryData = Object.entries(
+    dashboardData?.categoryDistribution ?? {}
+  ).map(([name, value]) => ({
+    name,
+    value,
+  }));
 
   // 블로그 플랫폼별 사용 횟수 (차트용)
-  const blogPlatformData = Object.entries(dashboardData?.platformUsage ?? {}).map(
-    ([platform, count]) => ({
-      platform,
-      count,
-    })
-  );
+  const blogPlatformData = Object.entries(
+    dashboardData?.platformUsage ?? {}
+  ).map(([platform, count]) => ({
+    platform,
+    count,
+  }));
 
   // 에러 상태 처리
   if (isError) {
@@ -86,7 +91,10 @@ const Dashboard = () => {
       });
     } else {
       // 프로덕션: 기본 로깅만
-      console.error("[Dashboard Component Error]", error instanceof Error ? error.message : "Unknown error");
+      console.error(
+        "[Dashboard Component Error]",
+        error instanceof Error ? error.message : "Unknown error"
+      );
     }
 
     return (
@@ -99,7 +107,9 @@ const Dashboard = () => {
                   데이터를 불러오는 중 오류가 발생했습니다.
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {error instanceof Error ? error.message : "알 수 없는 오류가 발생했습니다."}
+                  {error instanceof Error
+                    ? error.message
+                    : "알 수 없는 오류가 발생했습니다."}
                 </p>
               </div>
             </CardContent>
@@ -273,7 +283,10 @@ const Dashboard = () => {
                       textAnchor="end"
                       height={80}
                     />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--card))",

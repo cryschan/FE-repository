@@ -82,9 +82,9 @@ export type EmailCheckResponse = {
 
 // Dashboard 응답 타입
 export type DashboardResponse = {
-  activeUserCount: number;  // 활성 사용자 수
-  todayBlogCount: number;   // 오늘 작성된 블로그 수
-  totalBlogCount: number;   // 전체 블로그 수
+  activeUserCount: number; // 활성 사용자 수
+  todayBlogCount: number; // 오늘 작성된 블로그 수
+  totalBlogCount: number; // 전체 블로그 수
   categoryDistribution: Record<string, number>; // 카테고리별 분포
   platformUsage: Record<string, number>; // 플랫폼별 사용 횟수
   todayBlogItemList: Array<{
@@ -215,7 +215,9 @@ export const getDashboard = async (): Promise<DashboardResponse> => {
       const errorDetails = validationResult.error.errors
         .map((err) => `${err.path.join(".")}: ${err.message}`)
         .join(", ");
-      throw new Error(`서버 응답 데이터 형식이 올바르지 않습니다: ${errorDetails}`);
+      throw new Error(
+        `서버 응답 데이터 형식이 올바르지 않습니다: ${errorDetails}`
+      );
     }
 
     // 검증 통과 시 타입 안전하게 반환
@@ -230,11 +232,17 @@ export const getDashboard = async (): Promise<DashboardResponse> => {
       });
     } else {
       // 프로덕션: 기본 로깅만 (민감 정보 제외)
-      console.error("[Dashboard API Error]", error instanceof Error ? error.message : "Unknown error");
+      console.error(
+        "[Dashboard API Error]",
+        error instanceof Error ? error.message : "Unknown error"
+      );
     }
 
     // 검증 에러는 이미 명확한 메시지를 가지고 있으므로 그대로 재throw
-    if (error instanceof Error && error.message.includes("서버 응답 데이터 형식")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("서버 응답 데이터 형식")
+    ) {
       throw error;
     }
     // 기타 에러는 getErrorMessage로 처리
@@ -269,4 +277,3 @@ export const getErrorMessage = async (error: unknown): Promise<string> => {
   }
   return "알 수 없는 오류가 발생했습니다.";
 };
-
