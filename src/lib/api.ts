@@ -3,8 +3,9 @@ import { z } from "zod";
 
 // API 기본 설정
 // 개발 환경에서는 Vite proxy를 사용하도록 기본값을 빈 문자열로 설정
-const API_BASE_URL =
-  import.meta.env.DEV ? "" : (import.meta.env.VITE_API_BASE_URL || "");
+const API_BASE_URL = import.meta.env.DEV
+  ? ""
+  : import.meta.env.VITE_API_BASE_URL || "";
 
 // ky 인스턴스 생성
 export const api = ky.create({
@@ -111,6 +112,29 @@ const DashboardResponseSchema = z.object({
   totalTokenUsage: z.number().nonnegative(),
 });
 
+// ===== 블로그 =====
+export type Blog = {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  imgUrl?: string | null;
+  blogTemplateId?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  isToday?: boolean;
+};
+
+export type BlogsMyResponse = {
+  blogs: Blog[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+};
+
 // ===== API 함수 =====
 
 /**
@@ -128,13 +152,15 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
  * @returns 토큰 및 사용자 정보
  */
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
-  const response = await api.post("api/auth/login", { json: data }).json<LoginResponse>();
-  
+  const response = await api
+    .post("api/auth/login", { json: data })
+    .json<LoginResponse>();
+
   // 토큰 저장
   if (response.token) {
     localStorage.setItem("authToken", response.token);
   }
-  
+
   return response;
 };
 
@@ -143,8 +169,25 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
  * @param email 확인할 이메일
  * @returns 사용 가능 여부
  */
-export const checkEmailAvailability = async (email: string): Promise<EmailCheckResponse> => {
-  return api.get(`api/auth/check-email?email=${encodeURIComponent(email)}`).json<EmailCheckResponse>();
+export const checkEmailAvailability = async (
+  email: string
+): Promise<EmailCheckResponse> => {
+  return api
+    .get(`api/auth/check-email?email=${encodeURIComponent(email)}`)
+    .json<EmailCheckResponse>();
+};
+
+/**
+ * 내 블로그 글 조회 (페이지)
+ */
+export const getMyBlogs = async (
+  page: number = 1
+): Promise<BlogsMyResponse> => {
+  return api
+    .get("api/blogs/my", {
+      searchParams: { page: String(page) },
+    })
+    .json<BlogsMyResponse>();
 };
 
 /**
@@ -163,10 +206,10 @@ export const logout = () => {
 export const getDashboard = async (): Promise<DashboardResponse> => {
   try {
     const response = await api.get("api/dashboard").json<unknown>();
-    
+
     // 런타임 타입 검증
     const validationResult = DashboardResponseSchema.safeParse(response);
-    
+
     if (!validationResult.success) {
       // 검증 실패 시 상세한 에러 메시지 생성
       const errorDetails = validationResult.error.errors
@@ -174,7 +217,7 @@ export const getDashboard = async (): Promise<DashboardResponse> => {
         .join(", ");
       throw new Error(`서버 응답 데이터 형식이 올바르지 않습니다: ${errorDetails}`);
     }
-    
+
     // 검증 통과 시 타입 안전하게 반환
     return validationResult.data as DashboardResponse;
   } catch (error) {
@@ -213,7 +256,11 @@ export const getErrorMessage = async (error: unknown): Promise<string> => {
     if ("response" in error) {
       try {
         const errorResponse = await (error as any).response.json();
-        return errorResponse.message || errorResponse.error || "요청 처리 중 오류가 발생했습니다.";
+        return (
+          errorResponse.message ||
+          errorResponse.error ||
+          "요청 처리 중 오류가 발생했습니다."
+        );
       } catch {
         return "서버와의 통신 중 오류가 발생했습니다.";
       }
