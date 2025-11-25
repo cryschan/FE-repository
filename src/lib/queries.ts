@@ -9,6 +9,7 @@ import {
   signup,
   login,
   checkEmailAvailability,
+  getDashboard,
   getErrorMessage,
   getMyBlogs,
   type SignupRequest,
@@ -16,6 +17,7 @@ import {
   type SignupResponse,
   type LoginResponse,
   type EmailCheckResponse,
+  type DashboardResponse,
   type BlogsMyResponse,
 } from "./api";
 
@@ -250,5 +252,20 @@ export const useUpdateProfileMutation = () => {
         variant: "destructive",
       });
     },
+  });
+};
+
+// ===== Dashboard Query =====
+
+/**
+ * Dashboard 데이터 조회 Query
+ */
+export const useDashboardQuery = () => {
+  return useQuery({
+    queryKey: queryKeys.admin.dashboard,
+    queryFn: () => getDashboard(),
+    staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
+    retry: 2, // 네트워크 에러 시 최대 2회 재시도
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 지수 백오프 (최대 30초)
   });
 };

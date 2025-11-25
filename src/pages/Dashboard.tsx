@@ -6,7 +6,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Tag, Globe, Coins } from "lucide-react";
+import { FileText, Coins, Users } from "lucide-react";
+import { useDashboardQuery } from "@/lib/queries";
 import {
   Bar,
   BarChart,
@@ -19,55 +20,6 @@ import {
   Cell,
 } from "recharts";
 
-// 관리자 대시보드 - 오늘 작성된 글 데이터 (복붙 버튼 클릭 시 집계)
-const todayArticles = [
-  {
-    id: 1,
-    userName: "김철수",
-    title: "여름 남성 반팔 티셔츠 추천",
-    category: "남성 의류",
-    blogs: ["네이버 블로그", "티스토리"],
-    tokensUsed: 1250,
-    createdAt: "2024-01-15 09:30",
-  },
-  {
-    id: 2,
-    userName: "이영희",
-    title: "메이크업 초보자 가이드",
-    category: "메이크업 제품",
-    blogs: ["티스토리", "미디움"],
-    tokensUsed: 980,
-    createdAt: "2024-01-15 10:15",
-  },
-  {
-    id: 3,
-    userName: "박민수",
-    title: "편안한 운동화 추천",
-    category: "신발",
-    blogs: ["네이버 블로그"],
-    tokensUsed: 1100,
-    createdAt: "2024-01-15 11:20",
-  },
-  {
-    id: 4,
-    userName: "최지은",
-    title: "겨울 패딩 추천",
-    category: "여성 의류",
-    blogs: ["미디움", "벨로그"],
-    tokensUsed: 1350,
-    createdAt: "2024-01-15 13:45",
-  },
-  {
-    id: 5,
-    userName: "정수진",
-    title: "스킨케어 루틴 가이드",
-    category: "메이크업 제품",
-    blogs: ["브런치", "네이버 블로그"],
-    tokensUsed: 1420,
-    createdAt: "2024-01-15 14:30",
-  },
-];
-
 const COLORS = [
   "#8b5cf6",
   "#ec4899",
@@ -79,41 +31,93 @@ const COLORS = [
   "#f97316",
 ];
 
+// 날짜 포맷팅 함수
+const formatDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  } catch {
+    return dateString;
+  }
+};
+
 const Dashboard = () => {
-  // 오늘 작성된 글 수
-  const todayPostCount = todayArticles.length;
+  // Dashboard API 데이터 조회
+  const {
+    data: dashboardData,
+    isLoading,
+    isError,
+    error,
+  } = useDashboardQuery();
 
-  // 총 사용 토큰 수
-  const totalTokens = todayArticles.reduce(
-    (sum, article) => sum + article.tokensUsed,
-    0
-  );
+  // 통계 카드 데이터
+  const todayPostCount = dashboardData?.todayBlogCount ?? 0;
+  const activeUserCount = dashboardData?.activeUserCount ?? 0;
+  const totalBlogCount = dashboardData?.totalBlogCount ?? 0;
+  const totalTokens = dashboardData?.totalTokenUsage ?? 0;
 
-  // 카테고리별 글 수
-  const categoryCount = todayArticles.reduce((acc, article) => {
-    acc[article.category] = (acc[article.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  // 오늘 작성된 글 목록
+  const todayBlogList = dashboardData?.todayBlogItemList ?? [];
 
-  const categoryData = Object.entries(categoryCount).map(([name, value]) => ({
+  // 카테고리별 글 분포 (차트용)
+  const categoryData = Object.entries(
+    dashboardData?.categoryDistribution ?? {}
+  ).map(([name, value]) => ({
     name,
     value,
   }));
 
-  // 블로그 플랫폼별 사용 횟수
-  const blogPlatformCount = todayArticles.reduce((acc, article) => {
-    article.blogs.forEach((blog) => {
-      acc[blog] = (acc[blog] || 0) + 1;
-    });
-    return acc;
-  }, {} as Record<string, number>);
+  // 블로그 플랫폼별 사용 횟수 (차트용)
+  const blogPlatformData = Object.entries(
+    dashboardData?.platformUsage ?? {}
+  ).map(([platform, count]) => ({
+    platform,
+    count,
+  }));
 
-  const blogPlatformData = Object.entries(blogPlatformCount).map(
-    ([platform, count]) => ({
-      platform,
-      count,
-    })
-  );
+  // 에러 상태 처리
+  if (isError) {
+    // 에러 로깅
+    if (import.meta.env.DEV) {
+      console.error("[Dashboard Component Error]", {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    } else {
+      // 프로덕션: 기본 로깅만
+      console.error(
+        "[Dashboard Component Error]",
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
+
+    return (
+      <div className="bg-gradient-subtle">
+        <div className="w-full mx-auto p-8">
+          <Card className="shadow-card">
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <p className="text-lg font-medium text-destructive mb-2">
+                  데이터를 불러오는 중 오류가 발생했습니다.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {error instanceof Error
+                    ? error.message
+                    : "알 수 없는 오류가 발생했습니다."}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-subtle">
@@ -141,10 +145,10 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">
-                {todayPostCount}
+                {isLoading ? "-" : todayPostCount}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                복붙 버튼 클릭 집계
+                오늘 생성된 글 수
               </p>
             </CardContent>
           </Card>
@@ -152,16 +156,16 @@ const Dashboard = () => {
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                관심 카테고리
+                활성 사용자
               </CardTitle>
-              <Tag className="w-4 h-4 text-muted-foreground" />
+              <Users className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">
-                {Object.keys(categoryCount).length}
+                {isLoading ? "-" : activeUserCount}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                사용 중인 카테고리
+                현재 활성 사용자 수
               </p>
             </CardContent>
           </Card>
@@ -169,16 +173,16 @@ const Dashboard = () => {
           <Card className="shadow-card">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                블로그 플랫폼
+                총 글 수
               </CardTitle>
-              <Globe className="w-4 h-4 text-muted-foreground" />
+              <FileText className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">
-                {Object.keys(blogPlatformCount).length}
+                {isLoading ? "-" : totalBlogCount}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                사용 중인 플랫폼
+                전체 생성된 글 수
               </p>
             </CardContent>
           </Card>
@@ -192,7 +196,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">
-                {totalTokens.toLocaleString()}
+                {isLoading ? "-" : totalTokens.toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 오늘 총 사용량
@@ -207,39 +211,49 @@ const Dashboard = () => {
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle>카테고리별 글 분포</CardTitle>
-              <CardDescription>오늘 작성된 글의 카테고리 분포</CardDescription>
+              <CardDescription>카테고리별 글 작성 분포</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) =>
-                      `${name} (${(percent * 100).toFixed(0)}%)`
-                    }
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  로딩 중...
+                </div>
+              ) : categoryData.length === 0 ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  데이터가 없습니다.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) =>
+                        `${name} (${(percent * 100).toFixed(0)}%)`
+                      }
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "var(--radius)",
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
 
@@ -250,31 +264,44 @@ const Dashboard = () => {
               <CardDescription>플랫폼별 글 작성 횟수</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={blogPlatformData}>
-                  <XAxis
-                    dataKey="platform"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    angle={-15}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                  />
-                  <Bar
-                    dataKey="count"
-                    fill="hsl(var(--primary))"
-                    radius={[8, 8, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  로딩 중...
+                </div>
+              ) : blogPlatformData.length === 0 ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  데이터가 없습니다.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={blogPlatformData}>
+                    <XAxis
+                      dataKey="platform"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "var(--radius)",
+                      }}
+                    />
+                    <Bar
+                      dataKey="count"
+                      fill="hsl(var(--primary))"
+                      radius={[8, 8, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -283,47 +310,43 @@ const Dashboard = () => {
         <Card className="shadow-card">
           <CardHeader>
             <CardTitle>오늘 작성된 글</CardTitle>
-            <CardDescription>복붙 버튼 클릭으로 집계된 글 목록</CardDescription>
+            <CardDescription>오늘 생성된 글 목록</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {todayArticles.map((article) => (
-                <div
-                  key={article.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-medium text-foreground truncate">
-                        {article.title}
-                      </h3>
-                      <Badge variant="secondary" className="text-xs">
-                        {article.userName}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <Badge variant="outline" className="text-xs">
-                        {article.category}
-                      </Badge>
-                      {article.blogs.map((blog) => (
-                        <Badge key={blog} variant="outline" className="text-xs">
-                          {blog}
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                로딩 중...
+              </div>
+            ) : todayBlogList.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                오늘 작성된 글이 없습니다.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {todayBlogList.map((article) => (
+                  <div
+                    key={`${article.title}-${article.createdAt}`}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-medium text-foreground truncate">
+                          {article.title}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <Badge variant="outline" className="text-xs">
+                          {article.platform}
                         </Badge>
-                      ))}
-                      <span className="text-xs text-muted-foreground">
-                        {article.createdAt}
-                      </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDate(article.createdAt)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <Coins className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-semibold text-foreground">
-                      {article.tokensUsed.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
