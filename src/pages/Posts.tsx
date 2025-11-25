@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,9 +29,10 @@ import { Badge } from "@/components/ui/badge";
 import { Edit, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
+import { useMyBlogsQuery, queryKeys } from "@/lib/queries";
 
 type Post = {
-  id: string;
+  id: number;
   title: string;
   content: string;
   category: string;
@@ -59,120 +61,37 @@ const formatDate = (dateString: string): string => {
   return `${year}년 ${month}월 ${day}일`;
 };
 
-// AI가 자동으로 생성한 글 목록 (Mock 데이터)
-const mockPosts: Post[] = [
-  {
-    id: "1",
-    title: "여름 남성 반팔 티셔츠 추천 - 시원하고 스타일리시한",
-    content:
-      "# 여름 남성 반팔 티셔츠 추천\n\n여름철 필수 아이템인 반팔 티셔츠를 소개합니다...",
-    category: "남성 의류",
-    createdAt: "2025-11-15",
-    isToday: true,
-  },
-  {
-    id: "2",
-    title: "메이크업 초보자를 위한 베이스 메이크업 제품 가이드",
-    content:
-      "# 베이스 메이크업 가이드\n\n초보자도 쉽게 따라할 수 있는 베이스 메이크업...",
-    category: "메이크업 제품",
-    createdAt: "2025-11-14",
-    isToday: false,
-  },
-  {
-    id: "3",
-    title: "편안한 운동화 추천 - 일상에서 신기 좋은",
-    content:
-      "# 운동화 추천\n\n일상생활에서 편하게 신을 수 있는 운동화를 추천합니다...",
-    category: "신발",
-    createdAt: "2025-11-13",
-    isToday: false,
-  },
-  {
-    id: "4",
-    title: "겨울 패딩 추천 - 따뜻하고 가벼운",
-    content: "# 겨울 패딩 추천\n\n가볍고 따뜻한 겨울 패딩을 소개합니다...",
-    category: "여성 의류",
-    createdAt: "2025-11-12",
-    isToday: false,
-  },
-  {
-    id: "5",
-    title: "스킨케어 루틴 완벽 가이드",
-    content: "# 스킨케어 루틴\n\n올바른 스킨케어 순서와 제품 추천...",
-    category: "메이크업 제품",
-    createdAt: "2025-11-11",
-    isToday: false,
-  },
-  {
-    id: "6",
-    title: "홈 인테리어 소품 추천",
-    content: "# 인테리어 소품\n\n집을 더 아늑하게 만들어줄 소품들...",
-    category: "생활용품",
-    createdAt: "2025-11-10",
-    isToday: false,
-  },
-  {
-    id: "7",
-    title: "최신 노트북 비교 리뷰",
-    content: "# 노트북 리뷰\n\n2024년 최신 노트북 비교 분석...",
-    category: "전자제품",
-    createdAt: "2025-11-09",
-    isToday: false,
-  },
-  {
-    id: "8",
-    title: "건강한 간식 추천",
-    content: "# 건강 간식\n\n맛있고 건강한 간식 추천...",
-    category: "식품",
-    createdAt: "2025-11-08",
-    isToday: false,
-  },
-  {
-    id: "9",
-    title: "남성 액세서리 추천 - 시계와 팔찌",
-    content: "# 남성 액세서리\n\n스타일을 완성하는 액세서리...",
-    category: "액세서리",
-    createdAt: "2025-11-07",
-    isToday: false,
-  },
-  {
-    id: "10",
-    title: "여성 가방 추천 - 실용적이고 예쁜",
-    content: "# 여성 가방\n\n실용성과 디자인을 모두 갖춘 가방...",
-    category: "액세서리",
-    createdAt: "2025-11-06",
-    isToday: false,
-  },
-  {
-    id: "11",
-    title: "주방 용품 추천 - 요리가 즐거워지는",
-    content: "# 주방 용품\n\n요리를 더 편하게 만들어줄 용품들...",
-    category: "생활용품",
-    createdAt: "2025-11-05",
-    isToday: false,
-  },
-  {
-    id: "12",
-    title: "무선 이어폰 추천 - 음질과 편의성",
-    content: "# 무선 이어폰\n\n최고의 무선 이어폰 추천...",
-    category: "전자제품",
-    createdAt: "2025-11-04",
-    isToday: false,
-  },
-];
-
 const Posts = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [posts, setPosts] = useState<Post[]>(mockPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [markdown, setMarkdown] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 5;
+
+  // 서버 데이터 (페이지 단위)
+  const { data, isLoading } = useMyBlogsQuery(currentPage);
+  // 오늘 추가된 글 고정용: 항상 page=1 응답 기준
+  const { data: firstPageData } = useMyBlogsQuery(1);
+
+  // 서버 응답을 로컬 포맷으로 동기화
+  useEffect(() => {
+    if (!data) return;
+    const mapped: Post[] =
+      (data.blogs ?? []).map((b: any) => ({
+        id: b.id,
+        title: b.title,
+        content: b.content,
+        category: b.category,
+        createdAt: b.createdAt,
+        isToday: !!b.isToday,
+      })) ?? [];
+    setPosts(mapped);
+  }, [data]);
 
   const openEditDialog = (post: Post) => {
     setEditingPost(post);
@@ -204,6 +123,24 @@ const Posts = () => {
             : post
         )
       );
+      // Query 캐시도 동기화 (현재 페이지 데이터)
+      try {
+        queryClient.setQueryData(
+          queryKeys.blogs.my(currentPage),
+          (old: any) => {
+            if (!old || !old.blogs) return old;
+            const next = {
+              ...old,
+              blogs: old.blogs.map((b: any) =>
+                String(b.id) === String(editingPost.id)
+                  ? { ...b, title: title.trim(), content: markdown }
+                  : b
+              ),
+            };
+            return next;
+          }
+        );
+      } catch {}
 
       // 클립보드에 복사
       try {
@@ -233,17 +170,27 @@ const Posts = () => {
     return post.category === selectedCategory;
   });
 
-  // 오늘 글과 이전 글 분리 (오늘 글은 1개만)
-  const todayPost = filteredPosts.find((post) => post.isToday);
-  const previousPosts = filteredPosts.filter((post) => !post.isToday);
+  // 오늘 추가된 글: page=1 데이터 기준 isToday === true 중 "가장 최근(목록 상 첫 번째)" 1개
+  const todayFromFirstPage =
+    (firstPageData?.blogs ?? [])
+      .map((b: any) => ({
+        id: b.id,
+        title: b.title,
+        content: b.content,
+        category: b.category,
+        createdAt: b.createdAt,
+        isToday: !!b.isToday,
+      }))
+      .filter((p: Post) => p.isToday) ?? [];
+  const todayPost =
+    todayFromFirstPage.length > 0 ? todayFromFirstPage[0] : undefined;
 
-  // 페이지네이션
-  const totalPages = Math.ceil(previousPosts.length / postsPerPage);
-  const startIndex = (currentPage - 1) * postsPerPage;
-  const paginatedPosts = previousPosts.slice(
-    startIndex,
-    startIndex + postsPerPage
-  );
+  // 전체 글 목록: 현재 페이지에서 받은 글 그대로 사용 (오늘 글과 중복 표시 허용)
+  const listPosts = filteredPosts;
+
+  // 페이지네이션 (서버 값 사용)
+  const totalPages = data?.totalPages ?? 1;
+  const paginatedPosts = listPosts; // 현재 페이지 데이터는 서버에서 분할됨
 
   // 카테고리 변경 시 페이지를 1로 리셋
   const handleCategoryChange = (category: string) => {
@@ -290,7 +237,7 @@ const Posts = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <div className="flex items-center justify-between px-4 py-3 rounded-lg border bg-card hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-medium text-foreground truncate">
@@ -321,22 +268,19 @@ const Posts = () => {
         <Card className="shadow-elevated">
           <CardHeader>
             <CardTitle>전체 글 목록</CardTitle>
-            <CardDescription>
-              최신순으로 정렬된 블로그 글 목록입니다
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            {paginatedPosts.length === 0 ? (
-              <div className="text-sm text-muted-foreground py-8 text-center">
-                해당 카테고리에 글이 없습니다.
-              </div>
-            ) : (
-              <>
+            <div className="min-h-[360px] max-h-[360px] overflow-y-auto pr-1">
+              {paginatedPosts.length === 0 ? (
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground text-center">
+                  해당 카테고리에 글이 없습니다.
+                </div>
+              ) : (
                 <div className="space-y-3">
                   {paginatedPosts.map((post) => (
                     <div
                       key={post.id}
-                      className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      className="flex items-center justify-between px-4 py-3 rounded-lg border bg-card hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -362,8 +306,8 @@ const Posts = () => {
                     </div>
                   ))}
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </CardContent>
         </Card>
 
