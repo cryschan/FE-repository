@@ -1,5 +1,18 @@
 import ky from "ky";
-import { z } from "zod";
+
+import type {
+  SignupRequest,
+  SignupResponse,
+  LoginRequest,
+  LoginResponse,
+  EmailCheckResponse,
+  BlogTemplateResponse,
+  BlogTemplateCreateRequest,
+  BlogsMyResponse,
+  DashboardResponse,
+} from "./api.types";
+// 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
+export type * from "./api.types";
 
 // API 기본 설정
 // 개발 환경에서는 Vite proxy를 사용하도록 기본값을 빈 문자열로 설정
@@ -39,103 +52,20 @@ export const api = ky.create({
   },
 });
 
-// ===== 타입 정의 =====
-
-// 회원가입 요청
-export type SignupRequest = {
-  username: string;
-  email: string;
-  department: string;
-  password: string;
-};
-
-// 회원가입 응답
-export type SignupResponse = {
-  userId: number;
-  email: string;
-  username: string;
-  createdAt: string;
-  role: string;
-};
-
-// 로그인 요청
-export type LoginRequest = {
-  email: string;
-  password: string;
-};
-
-// 로그인 응답
-export type LoginResponse = {
-  userId: number;
-  email: string;
-  username: string;
-  createdAt: string;
-  role: string;
-  token: string;
-};
-
-// 이메일 중복 확인 응답
-export type EmailCheckResponse = {
-  available: boolean;
-  message: string;
-};
-
-// Dashboard 응답 타입
-export type DashboardResponse = {
-  activeUserCount: number; // 활성 사용자 수
-  todayBlogCount: number; // 오늘 작성된 블로그 수
-  totalBlogCount: number; // 전체 블로그 수
-  categoryDistribution: Record<string, number>; // 카테고리별 분포
-  platformUsage: Record<string, number>; // 플랫폼별 사용 횟수
-  todayBlogItemList: Array<{
-    title: string;
-    platform: string;
-    createdAt: string;
-  }>; // 오늘 작성된 블로그 목록
-  totalTokenUsage: number; // 총 토큰 사용량
-};
-
-// Dashboard 응답 스키마 - 런타임 타입 검증용
-const DashboardResponseSchema = z.object({
-  activeUserCount: z.number().int().nonnegative(),
-  todayBlogCount: z.number().int().nonnegative(),
-  totalBlogCount: z.number().int().nonnegative(),
-  categoryDistribution: z.record(z.string(), z.number().int().nonnegative()),
-  platformUsage: z.record(z.string(), z.number().int().nonnegative()),
-  todayBlogItemList: z.array(
-    z.object({
-      title: z.string(),
-      platform: z.string(),
-      createdAt: z.string(),
-    })
-  ),
-  totalTokenUsage: z.number().nonnegative(),
-});
-
-// ===== 블로그 =====
-export type Blog = {
-  id: number;
-  title: string;
-  content: string;
-  category: string;
-  imgUrl?: string | null;
-  blogTemplateId?: string | null;
-  createdAt: string;
-  updatedAt?: string;
-  isToday?: boolean;
-};
-
-export type BlogsMyResponse = {
-  blogs: Blog[];
-  currentPage: number;
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  first: boolean;
-  last: boolean;
-};
-
 // ===== API 함수 =====
+
+// ===== Blog Templates =====
+export const getMyBlogTemplate = async (): Promise<BlogTemplateResponse> => {
+  return api.get("api/blog-templates/me").json<BlogTemplateResponse>();
+};
+
+export const createBlogTemplate = async (
+  data: BlogTemplateCreateRequest
+): Promise<BlogTemplateResponse> => {
+  return api
+    .post("api/blog-templates", { json: data })
+    .json<BlogTemplateResponse>();
+};
 
 /**
  * 회원가입 API
@@ -191,6 +121,13 @@ export const getMyBlogs = async (
 };
 
 /**
+ * 관리자 대시보드 요약 조회
+ */
+export const getDashboard = async (): Promise<DashboardResponse> => {
+  return api.get("api/admin/dashboard").json<DashboardResponse>();
+};
+
+/**
  * 로그아웃 (클라이언트 측)
  */
 export const logout = () => {
@@ -205,59 +142,6 @@ export const logout = () => {
   setTimeout(() => {
     window.location.href = "/auth";
   }, 2000);
-};
-
-/**
- * Dashboard 데이터 조회 API
- * @returns 대시보드 통계 데이터
- * @throws {Error} API 호출 실패 또는 데이터 유효성 검사 실패 시 에러 발생
- */
-export const getDashboard = async (): Promise<DashboardResponse> => {
-  try {
-    const response = await api.get("api/dashboard").json<unknown>();
-
-    // 런타임 타입 검증
-    const validationResult = DashboardResponseSchema.safeParse(response);
-
-    if (!validationResult.success) {
-      // 검증 실패 시 상세한 에러 메시지 생성
-      const errorDetails = validationResult.error.errors
-        .map((err) => `${err.path.join(".")}: ${err.message}`)
-        .join(", ");
-      throw new Error(
-        `서버 응답 데이터 형식이 올바르지 않습니다: ${errorDetails}`
-      );
-    }
-
-    // 검증 통과 시 타입 안전하게 반환
-    return validationResult.data as DashboardResponse;
-  } catch (error) {
-    // 에러 로깅
-    if (import.meta.env.DEV) {
-      console.error("[Dashboard API Error]", {
-        error,
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-    } else {
-      // 프로덕션: 기본 로깅만 (민감 정보 제외)
-      console.error(
-        "[Dashboard API Error]",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-    }
-
-    // 검증 에러는 이미 명확한 메시지를 가지고 있으므로 그대로 재throw
-    if (
-      error instanceof Error &&
-      error.message.includes("서버 응답 데이터 형식")
-    ) {
-      throw error;
-    }
-    // 기타 에러는 getErrorMessage로 처리
-    const errorMessage = await getErrorMessage(error);
-    throw new Error(errorMessage);
-  }
 };
 
 // ===== 에러 핸들링 유틸리티 =====

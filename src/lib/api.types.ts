@@ -1,0 +1,100 @@
+// ===== Auth =====
+export type SignupRequest = {
+  username: string;
+  email: string;
+  department: string;
+  password: string;
+};
+
+export type SignupResponse = {
+  userId: number;
+  email: string;
+  username: string;
+  createdAt: string;
+  role: string;
+};
+
+export type LoginRequest = {
+  email: string;
+  password: string;
+};
+
+export type LoginResponse = {
+  userId: number;
+  email: string;
+  username: string;
+  createdAt: string;
+  role: string;
+  token: string;
+};
+
+export type EmailCheckResponse = {
+  available: boolean;
+  message: string;
+};
+
+// ===== Blogs =====
+export type Blog = {
+  id: number;
+  title: string;
+  content: string;
+  category: string;
+  imgUrl?: string | null;
+  blogTemplateId?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  isToday?: boolean;
+};
+
+export type BlogsMyResponse = {
+  blogs: Blog[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+};
+
+// ===== Dashboard =====
+export type DashboardResponse = {
+  todayBlogCount: number;
+  activeUserCount: number;
+  totalBlogCount: number;
+  totalTokenUsage: number;
+  categoryDistribution: Record<string, number>;
+  platformUsage: Record<string, number>;
+  todayBlogItemList: Array<{
+    title: string;
+    platform: string;
+    createdAt: string;
+  }>;
+};
+
+// ===== Blog Templates =====
+export type BlogTemplateResponse = {
+  id: number;
+  title: string;
+  createdAt: string;
+  categories: string[];
+  platforms: string[];
+  shopUrl: string;
+  includeImages: boolean;
+  imageCount: number | null;
+  charLimit: number;
+  dailyPostTime: string; // "HH:MM:SS"
+};
+
+export type BlogTemplateCreateRequest = {
+  title: string;
+  categories: string[];
+  platforms: string[]; // slugs: e.g., ["naver","tistory"]
+  shopUrl: string;
+  includeImages: boolean;
+  imageCount: number | null;
+  charLimit: number;
+  dailyPostTime: string; // "HH:MM:SS"
+  validImageCount: boolean;
+  validCharLimit: boolean;
+  validDailyPostTime: boolean;
+};

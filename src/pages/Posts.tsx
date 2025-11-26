@@ -30,6 +30,7 @@ import { Edit, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useToast } from "@/hooks/use-toast";
 import { useMyBlogsQuery, queryKeys } from "@/lib/queries";
+import { formatDateKorean } from "@/lib/utils";
 
 type Post = {
   id: number;
@@ -51,15 +52,6 @@ const CATEGORIES = [
   "전자제품",
   "식품",
 ];
-
-// 날짜 포맷 함수
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${year}년 ${month}월 ${day}일`;
-};
 
 const Posts = () => {
   const { toast } = useToast();
@@ -248,7 +240,7 @@ const Posts = () => {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {formatDate(todayPost.createdAt)}
+                    {formatDateKorean(todayPost.createdAt)}
                   </p>
                 </div>
                 <Button
@@ -292,7 +284,7 @@ const Posts = () => {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {formatDate(post.createdAt)}
+                          {formatDateKorean(post.createdAt)}
                         </p>
                       </div>
                       <Button

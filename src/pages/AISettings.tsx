@@ -1,4 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  createBlogTemplate,
+  getErrorMessage,
+  getMyBlogTemplate,
+} from "@/lib/api";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -6,42 +13,24 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-
-const CATEGORIES = [
-  "남성 의류",
-  "여성 의류",
-  "생활용품",
-  "신발",
-  "메이크업 제품",
-  "액세서리",
-  "전자제품",
-  "식품",
-];
-
-const BLOG_PLATFORMS = [
-  "네이버 블로그",
-  "티스토리",
-  "미디움",
-  "브런치",
-  "벨로그",
-];
+  TemplateTitleSection,
+  CategoriesSection,
+  PlatformsSection,
+  ShopUrlSection,
+  ImagesSection,
+  WordCountSection,
+  TimeSection,
+} from "@/components/AISettings";
+import {
+  PLATFORM_DISPLAY_TO_SLUG,
+  PLATFORM_TO_DISPLAY,
+} from "@/constants/AISettings";
 
 const AISettings = () => {
   const { toast } = useToast();
 
+  const [title, setTitle] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedBlogs, setSelectedBlogs] = useState<string[]>([]);
   const [shopUrl, setShopUrl] = useState("");
@@ -49,6 +38,65 @@ const AISettings = () => {
   const [imageCount, setImageCount] = useState("1");
   const [wordCount, setWordCount] = useState("500");
   const [generationTime, setGenerationTime] = useState("08:00");
+  const [hasTemplate, setHasTemplate] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const init = async () => {
+      setLoading(true);
+      try {
+        const data = await getMyBlogTemplate();
+        // 성공적으로 템플릿 조회됨 → 편집 모드
+        setHasTemplate(true);
+        setTitle(data.title || "");
+        setSelectedCategories(
+          Array.isArray(data.categories) ? data.categories : []
+        );
+        setSelectedBlogs(
+          (Array.isArray(data.platforms) ? data.platforms : []).map(
+            (p) => PLATFORM_TO_DISPLAY[p] || p
+          )
+        );
+        setShopUrl(data.shopUrl || "");
+        setIncludeImage(!!data.includeImages);
+        setImageCount(
+          data.includeImages && data.imageCount != null
+            ? String(data.imageCount)
+            : "1"
+        );
+        setWordCount(String(data.charLimit || 500));
+        const time = (data.dailyPostTime || "08:00:00").slice(0, 5);
+        setGenerationTime(time);
+      } catch (err) {
+        // 템플릿이 없거나 에러
+        // 기본 제목: "{userName}의 템플릿"
+        const storedName =
+          (typeof window !== "undefined" &&
+            (localStorage.getItem("userName") ||
+              localStorage.getItem("username"))) ||
+          "사용자";
+        setTitle(`${storedName}의 템플릿`);
+        setHasTemplate(false);
+        // 에러가 404가 아닌 경우에만 안내
+        try {
+          const msg = await getErrorMessage(err);
+          // 404나 템플릿 없음 메시지는 조용히 무시
+          if (msg && !/not found|없습니다|존재하지/i.test(msg)) {
+            toast({
+              title: "템플릿 조회 실패",
+              description: msg,
+              variant: "destructive",
+            });
+          }
+        } catch {}
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleCategory = (value: string, checked: boolean) => {
     setSelectedCategories((prev) =>
@@ -66,8 +114,16 @@ const AISettings = () => {
     );
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (hasTemplate) {
+      toast({
+        title: "수정 모드",
+        description: "수정 API는 추후에 연동될 예정입니다.",
+      });
+      return;
+    }
 
     if (selectedCategories.length === 0 || selectedBlogs.length === 0) {
       toast({
@@ -84,22 +140,66 @@ const AISettings = () => {
       return;
     }
 
-    // TODO: API 연동
-    console.log("AI Settings:", {
-      categories: selectedCategories,
-      blogs: selectedBlogs,
-      shopUrl,
-      includeImage,
-      imageCount: includeImage ? imageCount : null,
-      wordCount,
-      generationTime,
-    });
+    const charLimit = Number(wordCount);
+    const includeImages = !!includeImage;
+    const parsedImageCount = includeImages ? Number(imageCount) : null;
+    const apiDailyPostTime =
+      generationTime && generationTime.length === 5
+        ? `${generationTime}:00`
+        : generationTime || "08:00:00";
 
-    toast({
-      title: "설정이 저장되었습니다",
-      description: "AI 글쓰기 설정이 성공적으로 저장되었습니다.",
-      variant: "success",
-    });
+    const validImageCount = includeImages ? (parsedImageCount || 0) >= 1 : true;
+    const validCharLimit = Number.isFinite(charLimit) && charLimit > 0;
+    const validDailyPostTime = /^\d{2}:\d{2}(:\d{2})?$/.test(apiDailyPostTime);
+
+    if (!validCharLimit || !validDailyPostTime || !validImageCount) {
+      toast({
+        title: "입력값을 확인해주세요",
+        description: "설정 값이 유효한지 확인 후 다시 시도해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const platformSlugs = selectedBlogs.map(
+      (b) => PLATFORM_DISPLAY_TO_SLUG[b] || b
+    );
+
+    try {
+      setSubmitting(true);
+      await createBlogTemplate({
+        title: title?.trim() || "블로그 템플릿",
+        categories: selectedCategories,
+        platforms: platformSlugs,
+        shopUrl: shopUrl.trim(),
+        includeImages,
+        imageCount: parsedImageCount,
+        charLimit,
+        dailyPostTime: apiDailyPostTime,
+        validImageCount,
+        validCharLimit,
+        validDailyPostTime,
+      });
+      setHasTemplate(true);
+      toast({
+        title: "템플릿이 생성되었습니다",
+        description: "AI 블로그 템플릿이 성공적으로 저장되었습니다.",
+        variant: "success",
+      });
+      // 생성 완료 후 새로고침
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    } catch (error) {
+      const message = await getErrorMessage(error);
+      toast({
+        title: "저장 실패",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -121,161 +221,53 @@ const AISettings = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-6">
-              <div className="space-y-3">
-                <Label>관심 카테고리 (복수 선택)</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {CATEGORIES.map((cat) => {
-                    const checked = selectedCategories.includes(cat);
-                    return (
-                      <label
-                        key={cat}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(c) => toggleCategory(cat, !!c)}
-                        />
-                        <span className="text-sm text-foreground">{cat}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+              <TemplateTitleSection
+                title={title}
+                setTitle={setTitle}
+                loading={loading}
+              />
 
-              <div className="space-y-3">
-                <Label>포스팅할 블로그 (복수 선택)</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {BLOG_PLATFORMS.map((blog) => {
-                    const checked = selectedBlogs.includes(blog);
-                    return (
-                      <label
-                        key={blog}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={checked}
-                          onCheckedChange={(c) => toggleBlog(blog, !!c)}
-                        />
-                        <span className="text-sm text-foreground">{blog}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+              <CategoriesSection
+                selectedCategories={selectedCategories}
+                toggleCategory={toggleCategory}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="shop-url">쇼핑몰 URL</Label>
-                <Input
-                  id="shop-url"
-                  type="url"
-                  placeholder="https://yourshop.com"
-                  value={shopUrl}
-                  onChange={(e) => setShopUrl(e.target.value)}
-                />
-              </div>
+              <PlatformsSection
+                selectedBlogs={selectedBlogs}
+                toggleBlog={toggleBlog}
+              />
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="include-image">이미지 포함</Label>
-                    <p className="text-sm text-muted-foreground">
-                      블로그 글에 이미지를 포함할지 선택하세요
-                    </p>
-                  </div>
-                  <Switch
-                    id="include-image"
-                    checked={includeImage}
-                    onCheckedChange={setIncludeImage}
-                  />
-                </div>
+              <ShopUrlSection
+                shopUrl={shopUrl}
+                setShopUrl={setShopUrl}
+                loading={loading}
+              />
 
-                {includeImage && (
-                  <div className="space-y-2">
-                    <Label htmlFor="image-count">이미지 개수</Label>
-                    <Select value={imageCount} onValueChange={setImageCount}>
-                      <SelectTrigger id="image-count">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1개</SelectItem>
-                        <SelectItem value="2">2개</SelectItem>
-                        <SelectItem value="3">3개</SelectItem>
-                        <SelectItem value="4">4개</SelectItem>
-                        <SelectItem value="5">5개</SelectItem>
-                        <SelectItem value="6">6개</SelectItem>
-                        <SelectItem value="7">7개</SelectItem>
-                        <SelectItem value="8">8개</SelectItem>
-                        <SelectItem value="9">9개</SelectItem>
-                        <SelectItem value="10">10개</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+              <ImagesSection
+                includeImage={includeImage}
+                setIncludeImage={setIncludeImage}
+                imageCount={imageCount}
+                setImageCount={setImageCount}
+                loading={loading}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="word-count">글자수</Label>
-                <Select value={wordCount} onValueChange={setWordCount}>
-                  <SelectTrigger id="word-count">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="500">500자 이하</SelectItem>
-                    <SelectItem value="1000">1000자 이하</SelectItem>
-                    <SelectItem value="1500">1500자 이하</SelectItem>
-                    <SelectItem value="2000">2000자 이하</SelectItem>
-                    <SelectItem value="2500">2500자 이하</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <WordCountSection
+                wordCount={wordCount}
+                setWordCount={setWordCount}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="generation-time">매일 글 생성 시간</Label>
-                <Select
-                  value={generationTime}
-                  onValueChange={setGenerationTime}
-                >
-                  <SelectTrigger id="generation-time">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="00:00">오전 12시 (자정)</SelectItem>
-                    <SelectItem value="01:00">오전 1시</SelectItem>
-                    <SelectItem value="02:00">오전 2시</SelectItem>
-                    <SelectItem value="03:00">오전 3시</SelectItem>
-                    <SelectItem value="04:00">오전 4시</SelectItem>
-                    <SelectItem value="05:00">오전 5시</SelectItem>
-                    <SelectItem value="06:00">오전 6시</SelectItem>
-                    <SelectItem value="07:00">오전 7시</SelectItem>
-                    <SelectItem value="08:00">오전 8시</SelectItem>
-                    <SelectItem value="09:00">오전 9시</SelectItem>
-                    <SelectItem value="10:00">오전 10시</SelectItem>
-                    <SelectItem value="11:00">오전 11시</SelectItem>
-                    <SelectItem value="12:00">오후 12시 (정오)</SelectItem>
-                    <SelectItem value="13:00">오후 1시</SelectItem>
-                    <SelectItem value="14:00">오후 2시</SelectItem>
-                    <SelectItem value="15:00">오후 3시</SelectItem>
-                    <SelectItem value="16:00">오후 4시</SelectItem>
-                    <SelectItem value="17:00">오후 5시</SelectItem>
-                    <SelectItem value="18:00">오후 6시</SelectItem>
-                    <SelectItem value="19:00">오후 7시</SelectItem>
-                    <SelectItem value="20:00">오후 8시</SelectItem>
-                    <SelectItem value="21:00">오후 9시</SelectItem>
-                    <SelectItem value="22:00">오후 10시</SelectItem>
-                    <SelectItem value="23:00">오후 11시</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  매일 선택한 시간에 AI가 자동으로 블로그 글을 생성합니다
-                </p>
-              </div>
+              <TimeSection
+                generationTime={generationTime}
+                setGenerationTime={setGenerationTime}
+              />
 
               <div className="flex justify-end">
                 <Button
                   type="submit"
                   className="bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  disabled={loading || submitting}
                 >
-                  설정 저장
+                  {hasTemplate ? "수정하기" : "생성하기"}
                 </Button>
               </div>
             </form>
