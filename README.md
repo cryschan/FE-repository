@@ -71,6 +71,32 @@ cp .env.example .env
 npm run dev
 ```
 
+## 🧹 코드 포맷팅 (Prettier)
+
+프로젝트에 Prettier를 사용해 일관된 코드 스타일을 유지합니다.
+
+### VS Code 설정
+
+기본: 확장(Extension) 설치 후 설정 두 가지
+
+1. Prettier 확장 설치: “Prettier - Code formatter”
+
+2. 기본 포맷팅 설정
+
+- 설정 열기(Cmd+,) → “default formatter” 검색 → “Prettier - Code formatter” 선택
+
+3. “format on save” 켜기
+
+- 설정 열기(Cmd+,) → “format on save” 검색 → 켜기
+
+4. 동작 확인
+
+- 파일 저장 시 자동 정렬 or “Format Document”(Shift+Alt+F) 실행
+
+5. 주의 사항
+
+- 우리가 추가한 `.vscode/settings.json`이 자동 적용됩니다. 개인 사용자 설정이 우선하면 덮어쓸 수 있으니, 위 메뉴에서 확인하세요.
+
 ### 번들 사이즈 분석(rollup-plugin-visualizer)
 
 빌드 후 번들 크기를 시각화한 `stats.html`이 루트에 생성됩니다.
