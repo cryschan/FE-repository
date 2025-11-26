@@ -25,6 +25,7 @@ import {
 import {
   PLATFORM_DISPLAY_TO_SLUG,
   PLATFORM_TO_DISPLAY,
+  CATEGORIES,
 } from "@/constants/AISettings";
 
 const AISettings = () => {
@@ -32,10 +33,14 @@ const AISettings = () => {
 
   const [title, setTitle] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([
+    ...CATEGORIES,
+  ]);
   const [selectedBlogs, setSelectedBlogs] = useState<string[]>([]);
-  const [shopUrl, setShopUrl] = useState("");
+  const [shopUrl, setShopUrl] = useState("https://ssadagu.kr/");
   const [includeImage, setIncludeImage] = useState(false);
-  const [imageCount, setImageCount] = useState("1");
+  const [imageCount, setImageCount] = useState("0");
+  const [lastImageCount, setLastImageCount] = useState("0");
   const [wordCount, setWordCount] = useState("500");
   const [generationTime, setGenerationTime] = useState("08:00");
   const [hasTemplate, setHasTemplate] = useState(false);
@@ -51,8 +56,13 @@ const AISettings = () => {
         setHasTemplate(true);
         setTitle(data.title || "");
         setSelectedCategories(
-          Array.isArray(data.categories) ? data.categories : []
+          Array.isArray(data.categories)
+            ? data.categories.filter((c) =>
+                (CATEGORIES as readonly string[]).includes(c)
+              )
+            : []
         );
+        setAvailableCategories([...CATEGORIES]);
         setSelectedBlogs(
           (Array.isArray(data.platforms) ? data.platforms : []).map(
             (p) => PLATFORM_TO_DISPLAY[p] || p
@@ -60,11 +70,14 @@ const AISettings = () => {
         );
         setShopUrl(data.shopUrl || "");
         setIncludeImage(!!data.includeImages);
-        setImageCount(
-          data.includeImages && data.imageCount != null
-            ? String(data.imageCount)
-            : "1"
-        );
+        if (data.includeImages && data.imageCount != null) {
+          const cnt = String(data.imageCount);
+          setImageCount(cnt);
+          setLastImageCount(cnt);
+        } else {
+          setImageCount("0");
+          setLastImageCount("1");
+        }
         setWordCount(String(data.charLimit || 500));
         const time = (data.dailyPostTime || "08:00:00").slice(0, 5);
         setGenerationTime(time);
@@ -78,6 +91,7 @@ const AISettings = () => {
           "사용자";
         setTitle(`${storedName}의 템플릿`);
         setHasTemplate(false);
+        setAvailableCategories([...CATEGORIES]);
         // 에러가 404가 아닌 경우에만 안내
         try {
           const msg = await getErrorMessage(err);
@@ -142,7 +156,7 @@ const AISettings = () => {
 
     const charLimit = Number(wordCount);
     const includeImages = !!includeImage;
-    const parsedImageCount = includeImages ? Number(imageCount) : null;
+    const parsedImageCount = includeImages ? Number(imageCount) : 0;
     const apiDailyPostTime =
       generationTime && generationTime.length === 5
         ? `${generationTime}:00`
@@ -169,7 +183,9 @@ const AISettings = () => {
       setSubmitting(true);
       await createBlogTemplate({
         title: title?.trim() || "블로그 템플릿",
-        categories: selectedCategories,
+        categories: selectedCategories.filter((c) =>
+          (CATEGORIES as readonly string[]).includes(c)
+        ),
         platforms: platformSlugs,
         shopUrl: shopUrl.trim(),
         includeImages,
@@ -202,9 +218,28 @@ const AISettings = () => {
     }
   };
 
+  const handleIncludeImageChange = (checked: boolean) => {
+    setIncludeImage(checked);
+    if (!checked) {
+      if (imageCount !== "0") {
+        setLastImageCount(imageCount);
+      }
+      setImageCount("0");
+    } else {
+      setImageCount(lastImageCount || "1");
+    }
+  };
+
+  const handleImageCountChange = (value: string) => {
+    setImageCount(value);
+    if (includeImage) {
+      setLastImageCount(value);
+    }
+  };
+
   return (
     <div className="bg-gradient-subtle">
-      <div className="w-full mx-auto p-8 space-y-6">
+      <div className="w-full mx-auto p-8 pb-16 space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-foreground">AI 글쓰기 설정</h1>
           <p className="text-muted-foreground mt-1">
@@ -228,6 +263,7 @@ const AISettings = () => {
               />
 
               <CategoriesSection
+                categories={availableCategories}
                 selectedCategories={selectedCategories}
                 toggleCategory={toggleCategory}
               />
@@ -237,17 +273,13 @@ const AISettings = () => {
                 toggleBlog={toggleBlog}
               />
 
-              <ShopUrlSection
-                shopUrl={shopUrl}
-                setShopUrl={setShopUrl}
-                loading={loading}
-              />
+              <ShopUrlSection shopUrl={shopUrl} setShopUrl={setShopUrl} />
 
               <ImagesSection
                 includeImage={includeImage}
-                setIncludeImage={setIncludeImage}
+                setIncludeImage={handleIncludeImageChange}
                 imageCount={imageCount}
-                setImageCount={setImageCount}
+                setImageCount={handleImageCountChange}
                 loading={loading}
               />
 

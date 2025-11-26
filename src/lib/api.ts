@@ -141,7 +141,7 @@ export const logout = () => {
 
   setTimeout(() => {
     window.location.href = "/auth";
-  }, 2000);
+  }, 1000);
 };
 
 // ===== 에러 핸들링 유틸리티 =====

@@ -36,20 +36,19 @@ export const TemplateTitleSection = ({
 };
 
 export const CategoriesSection = ({
+  categories,
   selectedCategories,
   toggleCategory,
 }: {
+  categories: string[];
   selectedCategories: string[];
   toggleCategory: (value: string, checked: boolean) => void;
 }) => {
-  const categoriesToShow = Array.from(
-    new Set<string>([...CATEGORIES, ...selectedCategories])
-  );
   return (
     <div className="space-y-3">
-      <Label>관심 카테고리 (복수 선택)</Label>
+      <Label>관심 카테고리 (복수 선택 가능)</Label>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {categoriesToShow.map((cat) => {
+        {categories.map((cat) => {
           const checked = selectedCategories.includes(cat);
           return (
             <label key={cat} className="flex items-center gap-2 cursor-pointer">
@@ -75,7 +74,7 @@ export const PlatformsSection = ({
 }) => {
   return (
     <div className="space-y-3">
-      <Label>포스팅할 블로그 (복수 선택)</Label>
+      <Label>포스팅할 블로그 (복수 선택 가능)</Label>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {BLOG_PLATFORMS.map((blog) => {
           const checked = selectedBlogs.includes(blog);
@@ -100,11 +99,9 @@ export const PlatformsSection = ({
 export const ShopUrlSection = ({
   shopUrl,
   setShopUrl,
-  loading,
 }: {
   shopUrl: string;
   setShopUrl: (value: string) => void;
-  loading: boolean;
 }) => {
   return (
     <div className="space-y-2">
@@ -112,10 +109,9 @@ export const ShopUrlSection = ({
       <Input
         id="shop-url"
         type="url"
-        placeholder="https://yourshop.com"
         value={shopUrl}
         onChange={(e) => setShopUrl(e.target.value)}
-        disabled={loading}
+        disabled={true} // v1: 쇼핑몰 URL은 수정 불가
       />
     </div>
   );
