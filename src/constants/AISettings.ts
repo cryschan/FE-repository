@@ -1,4 +1,11 @@
-export const CATEGORIES = ["상의", "하의", "아우터", "신발", "ACC"] as const;
+export const CATEGORIES = [
+  "상의",
+  "바지",
+  "아우터",
+  "신발",
+  "가방",
+  "패션소품",
+] as const;
 
 export const BLOG_PLATFORMS = [
   "네이버 블로그",
