@@ -108,7 +108,6 @@ export type BlogTemplateCreateRequest = {
   validDailyPostTime: boolean;
 };
 
-//FAQ api 타입 정의
 // ==== FAQs ====
 export type FAQs = {
   id: number;

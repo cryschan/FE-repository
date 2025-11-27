@@ -20,7 +20,6 @@ import {
   type EmailCheckResponse,
   type DashboardResponse,
   type BlogsMyResponse,
-  type FAQsResponse,
 } from "./api";
 
 // ===== Query Keys =====
@@ -43,7 +42,6 @@ export const queryKeys = {
     inquiries: ["admin", "inquiries"] as const,
     dashboard: ["admin", "dashboard"] as const,
   },
-  //faq 추가
   faqs: {
     all: ["faqs", "all"] as const,
   },
