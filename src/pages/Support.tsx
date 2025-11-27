@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useFAQsQuery } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -82,6 +83,8 @@ const Support = () => {
 
   const [selectedTab, setSelectedTab] = useState("faq");
   const [open, setOpen] = useState(false);
+  //FAQ 데이터 조회
+  const { data: faqs = [], isLoading: isLoadingFAQs } = useFAQsQuery();
 
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
 
@@ -219,7 +222,7 @@ const Support = () => {
               <CardContent>
                 <Accordion type="single" collapsible className="w-full">
                   {faqs.map((faq) => (
-                    <AccordionItem key={faq.id} value={faq.id}>
+                    <AccordionItem key={faq.id} value={String(faq.id)}>
                       <AccordionTrigger className="text-left">
                         {faq.question}
                       </AccordionTrigger>
