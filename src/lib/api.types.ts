@@ -1,3 +1,5 @@
+import { WeekNumberLabel } from "react-day-picker";
+
 // ===== Auth =====
 export type SignupRequest = {
   username: string;
@@ -98,3 +100,15 @@ export type BlogTemplateCreateRequest = {
   validCharLimit: boolean;
   validDailyPostTime: boolean;
 };
+
+//FAQ api 타입 정의
+// ==== FAQs ====
+export type FAQs = {
+  id: number;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  createdAt: string;
+};
+
+export type FAQsResponse = FAQs[];
