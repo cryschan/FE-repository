@@ -84,10 +84,8 @@ const Support = () => {
   const [selectedTab, setSelectedTab] = useState("faq");
   const [open, setOpen] = useState(false);
 
-  // FAQ 데이터 조회
   const {
     data: faqsData,
-    isLoading: isLoadingFAQs,
     isError: isFAQsError,
   } = useFAQsQuery();
 
@@ -228,11 +226,7 @@ const Support = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoadingFAQs ? (
-                  <div className="text-center py-8 text-gray-500">
-                    FAQ를 불러오는 중...
-                  </div>
-                ) : isFAQsError ? (
+                {isFAQsError ? (
                   <div className="text-center py-8 text-red-500">
                     FAQ를 불러오는 중 오류가 발생했습니다.
                   </div>
