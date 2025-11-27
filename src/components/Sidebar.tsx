@@ -113,7 +113,6 @@ const AppSidebar = () => {
             variant="link"
             className="w-full justify-start gap-2 bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             onClick={() => {
-              // 안내 토스트 후 2초 뒤 이동
               toast({
                 title: "로그아웃 되었습니다",
                 description: "로그인 페이지로 이동하겠습니다.",

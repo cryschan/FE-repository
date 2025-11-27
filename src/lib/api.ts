@@ -161,7 +161,24 @@ export const getDashboard = async (): Promise<DashboardResponse> => {
 /**
  * 로그아웃 (클라이언트 측)
  */
-export const logout = () => {
+export const logout = async () => {
+  const refreshToken = (() => {
+    try {
+      return localStorage.getItem(REFRESH_TOKEN_KEY) || "";
+    } catch {
+      return "";
+    }
+  })();
+
+  // 서버에 로그아웃 알림 (refreshToken 무효화)
+  try {
+    if (refreshToken) {
+      await api.post("api/auth/logout", { json: { refreshToken } });
+    }
+  } catch {
+    // 서버 로그아웃 실패는 무시하고 클라이언트 로그아웃 계속 진행
+  }
+
   try {
     // 토큰 및 사용자 정보 제거
     localStorage.removeItem(ACCESS_TOKEN_KEY);
