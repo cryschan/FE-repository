@@ -11,6 +11,8 @@ import type {
   BlogsMyResponse,
   DashboardResponse,
   FAQsResponse,
+  RefreshRequest,
+  RefreshResponse,
 } from "./api.types";
 // 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
 export type * from "./api.types";
@@ -20,6 +22,10 @@ export type * from "./api.types";
 const API_BASE_URL = import.meta.env.DEV
   ? ""
   : import.meta.env.VITE_API_BASE_URL || "";
+
+// 내부 헬퍼: 토큰 키
+const ACCESS_TOKEN_KEY = "accessToken";
+const REFRESH_TOKEN_KEY = "refreshToken";
 
 // ky 인스턴스 생성
 export const api = ky.create({
@@ -34,7 +40,7 @@ export const api = ky.create({
     beforeRequest: [
       (request) => {
         // 로컬 스토리지에서 토큰 가져오기
-        const token = localStorage.getItem("authToken");
+        const token = localStorage.getItem(ACCESS_TOKEN_KEY);
         if (token) {
           request.headers.set("Authorization", `Bearer ${token}`);
         }
@@ -42,9 +48,24 @@ export const api = ky.create({
     ],
     afterResponse: [
       async (request, options, response) => {
-        // 401 에러 시 로그아웃 처리
+        // 401 에러 시 토큰 갱신 시도 후 재시도
         if (response.status === 401) {
-          localStorage.removeItem("authToken");
+          const isRetry = (options as any).__isRetry;
+          const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+          if (!isRetry && refreshToken) {
+            try {
+              const { accessToken } = await refreshAccessToken({
+                refreshToken,
+              });
+              if (accessToken) {
+                localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+                (options as any).__isRetry = true;
+                return api(request);
+              }
+            } catch {}
+          }
+          localStorage.removeItem(ACCESS_TOKEN_KEY);
+          localStorage.removeItem(REFRESH_TOKEN_KEY);
           window.location.href = "/auth";
         }
         return response;
@@ -68,6 +89,13 @@ export const createBlogTemplate = async (
     .json<BlogTemplateResponse>();
 };
 
+// ===== Auth =====
+export const refreshAccessToken = async (
+  data: RefreshRequest
+): Promise<RefreshResponse> => {
+  return api.post("api/auth/refresh", { json: data }).json<RefreshResponse>();
+};
+
 /**
  * 회원가입 API
  * @param data 회원가입 정보
@@ -88,8 +116,11 @@ export const login = async (data: LoginRequest): Promise<LoginResponse> => {
     .json<LoginResponse>();
 
   // 토큰 저장
-  if (response.token) {
-    localStorage.setItem("authToken", response.token);
+  if (response.accessToken) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, response.accessToken);
+  }
+  if (response.refreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, response.refreshToken);
   }
 
   return response;
@@ -138,10 +169,28 @@ export const getFAQs = async (): Promise<FAQsResponse> => {
 /**
  * 로그아웃 (클라이언트 측)
  */
-export const logout = () => {
+export const logout = async () => {
+  const refreshToken = (() => {
+    try {
+      return localStorage.getItem(REFRESH_TOKEN_KEY) || "";
+    } catch {
+      return "";
+    }
+  })();
+
+  // 서버에 로그아웃 알림 (refreshToken 무효화)
+  try {
+    if (refreshToken) {
+      await api.post("api/auth/logout", { json: { refreshToken } });
+    }
+  } catch {
+    // 서버 로그아웃 실패는 무시하고 클라이언트 로그아웃 계속 진행
+  }
+
   try {
     // 토큰 및 사용자 정보 제거
-    localStorage.removeItem("authToken");
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userName");
     localStorage.removeItem("userRole");
