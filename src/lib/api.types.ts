@@ -56,19 +56,11 @@ export type BlogsMyResponse = {
   last: boolean;
 };
 
-// ===== Dashboard =====
-export type DashboardResponse = {
-  todayBlogCount: number;
-  activeUserCount: number;
-  totalBlogCount: number;
-  totalTokenUsage: number;
-  categoryDistribution: Record<string, number>;
-  platformUsage: Record<string, number>;
-  todayBlogItemList: Array<{
-    title: string;
-    platform: string;
-    createdAt: string;
-  }>;
+export type BlogUpdateRequest = {
+  title: string;
+  content: string;
+  category: string;
+  blogTemplateId?: number | string | null;
 };
 
 // ===== Blog Templates =====
@@ -97,4 +89,30 @@ export type BlogTemplateCreateRequest = {
   validImageCount: boolean;
   validCharLimit: boolean;
   validDailyPostTime: boolean;
+};
+
+// ===== Uploads =====
+export type CreateUploadRequest = {
+  fileName: string;
+  contentType: string;
+};
+
+export type CreateUploadResponse = {
+  presignedUrl: string;
+  finalUrl: string;
+};
+
+// ===== Dashboard =====
+export type DashboardResponse = {
+  todayBlogCount: number;
+  activeUserCount: number;
+  totalBlogCount: number;
+  totalTokenUsage: number;
+  categoryDistribution: Record<string, number>;
+  platformUsage: Record<string, number>;
+  todayBlogItemList: Array<{
+    title: string;
+    platform: string;
+    createdAt: string;
+  }>;
 };
