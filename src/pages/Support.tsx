@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useFAQsQuery } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -46,21 +47,6 @@ type Inquiry = {
   content?: string | null;
 };
 
-const faqs = [
-  {
-    id: "1",
-    question: "AI가 블로그 글을 생성하는 데 얼마나 걸리나요?",
-    answer:
-      "일반적으로 키워드와 제품 URL을 입력한 후 약 30초에서 1분 정도 소요됩니다. 복잡한 카테고리나 긴 콘텐츠의 경우 조금 더 걸릴 수 있습니다.",
-  },
-  {
-    id: "2",
-    question: "생성된 블로그 글을 수정할 수 있나요?",
-    answer:
-      "네, 가능합니다. 블로그 글 편집 화면에서 AI가 생성한 콘텐츠를 자유롭게 수정하고 편집할 수 있습니다. 마크다운 형식을 지원하며 실시간 미리보기 기능도 제공됩니다.",
-  },
-];
-
 const initialInquiries: Inquiry[] = [
   {
     id: "1",
@@ -97,6 +83,14 @@ const Support = () => {
 
   const [selectedTab, setSelectedTab] = useState("faq");
   const [open, setOpen] = useState(false);
+
+  const {
+    data: faqsData,
+    isError: isFAQsError,
+  } = useFAQsQuery();
+
+  // FAQ 데이터를 메모이제이션하여 안정적인 참조 유지
+  const faqs = useMemo(() => faqsData ?? [], [faqsData]);
 
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
 
@@ -232,18 +226,34 @@ const Support = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                  {faqs.map((faq) => (
-                    <AccordionItem key={faq.id} value={faq.id}>
-                      <AccordionTrigger className="text-left">
-                        {faq.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-gray-600">
-                        {faq.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                {isFAQsError ? (
+                  <div className="text-center py-8 text-red-500">
+                    FAQ를 불러오는 중 오류가 발생했습니다.
+                  </div>
+                ) : faqs.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    등록된 FAQ가 없습니다.
+                  </div>
+                ) : (
+                  <Accordion type="single" collapsible className="w-full">
+                    {faqs.map((faq) => {
+                      // 타입 안정성을 위해 명시적으로 문자열 변환
+                      const itemValue =
+                        typeof faq.id === "number" ? String(faq.id) : faq.id;
+
+                      return (
+                        <AccordionItem key={faq.id} value={itemValue}>
+                          <AccordionTrigger className="text-left">
+                            {faq.question}
+                          </AccordionTrigger>
+                          <AccordionContent className="text-gray-600">
+                            {faq.answer}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

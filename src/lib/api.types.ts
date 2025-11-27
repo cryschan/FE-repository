@@ -107,3 +107,14 @@ export type BlogTemplateCreateRequest = {
   validCharLimit: boolean;
   validDailyPostTime: boolean;
 };
+
+// ==== FAQs ====
+export type FAQs = {
+  id: number;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  createdAt: string;
+};
+
+export type FAQsResponse = FAQs[];

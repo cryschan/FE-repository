@@ -12,6 +12,7 @@ import {
   getDashboard,
   getErrorMessage,
   getMyBlogs,
+  getFAQs,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
@@ -40,6 +41,9 @@ export const queryKeys = {
   admin: {
     inquiries: ["admin", "inquiries"] as const,
     dashboard: ["admin", "dashboard"] as const,
+  },
+  faqs: {
+    all: ["faqs", "all"] as const,
   },
 } as const;
 
@@ -267,5 +271,16 @@ export const useDashboardQuery = () => {
     staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
     retry: 2, // 네트워크 에러 시 최대 2회 재시도
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // 지수 백오프 (최대 30초)
+  });
+};
+
+/**
+ * FAQ 목록 조회 Query
+ */
+export const useFAQsQuery = () => {
+  return useQuery({
+    queryKey: queryKeys.faqs.all,
+    queryFn: () => getFAQs(),
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
   });
 };

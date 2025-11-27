@@ -10,6 +10,7 @@ import type {
   BlogTemplateCreateRequest,
   BlogsMyResponse,
   DashboardResponse,
+  FAQsResponse,
   RefreshRequest,
   RefreshResponse,
 } from "./api.types";
@@ -156,6 +157,13 @@ export const getMyBlogs = async (
  */
 export const getDashboard = async (): Promise<DashboardResponse> => {
   return api.get("api/admin/dashboard").json<DashboardResponse>();
+};
+
+/**
+ * FAQ 자주 묻는 질문 목록 조회
+ */
+export const getFAQs = async (): Promise<FAQsResponse> => {
+  return api.get("api/faqs").json<FAQsResponse>();
 };
 
 /**
