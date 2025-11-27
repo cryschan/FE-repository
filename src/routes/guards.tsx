@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 // 로그인 여부 확인
 const isAuthenticated = (): boolean => {
   try {
-    return !!localStorage.getItem("authToken");
+    return !!localStorage.getItem("accessToken");
   } catch {
     return false;
   }
