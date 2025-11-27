@@ -43,8 +43,9 @@ export const queryKeys = {
     inquiries: ["admin", "inquiries"] as const,
     dashboard: ["admin", "dashboard"] as const,
   },
+  //faq 추가
   faqs: {
-    all: ["faqs"] as const,
+    faqs: ["faqs", "all"] as const,
   },
 } as const;
 
@@ -275,16 +276,13 @@ export const useDashboardQuery = () => {
   });
 };
 
-// ===== FAQ Query =====
-
 /**
  * FAQ 목록 조회 Query
  */
 export const useFAQsQuery = () => {
   return useQuery({
     queryKey: queryKeys.faqs.all,
-    queryFn: (): Promise<FAQsResponse> => getFAQs(),
+    queryFn: () => getFAQs(),
     staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
-    retry: 2,
   });
 };

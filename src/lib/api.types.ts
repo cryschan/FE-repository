@@ -1,5 +1,3 @@
-import { WeekNumberLabel } from "react-day-picker";
-
 // ===== Auth =====
 export type SignupRequest = {
   username: string;

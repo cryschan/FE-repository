@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useFAQsQuery } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,8 +83,16 @@ const Support = () => {
 
   const [selectedTab, setSelectedTab] = useState("faq");
   const [open, setOpen] = useState(false);
-  //FAQ 데이터 조회
-  const { data: faqs = [], isLoading: isLoadingFAQs } = useFAQsQuery();
+
+  // FAQ 데이터 조회
+  const {
+    data: faqsData,
+    isLoading: isLoadingFAQs,
+    isError: isFAQsError,
+  } = useFAQsQuery();
+
+  // FAQ 데이터를 메모이제이션하여 안정적인 참조 유지
+  const faqs = useMemo(() => faqsData ?? [], [faqsData]);
 
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialInquiries);
 
@@ -220,18 +228,38 @@ const Support = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Accordion type="single" collapsible className="w-full">
-                  {faqs.map((faq) => (
-                    <AccordionItem key={faq.id} value={String(faq.id)}>
-                      <AccordionTrigger className="text-left">
-                        {faq.question}
-                      </AccordionTrigger>
-                      <AccordionContent className="text-gray-600">
-                        {faq.answer}
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                {isLoadingFAQs ? (
+                  <div className="text-center py-8 text-gray-500">
+                    FAQ를 불러오는 중...
+                  </div>
+                ) : isFAQsError ? (
+                  <div className="text-center py-8 text-red-500">
+                    FAQ를 불러오는 중 오류가 발생했습니다.
+                  </div>
+                ) : faqs.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    등록된 FAQ가 없습니다.
+                  </div>
+                ) : (
+                  <Accordion type="single" collapsible className="w-full">
+                    {faqs.map((faq) => {
+                      // 타입 안정성을 위해 명시적으로 문자열 변환
+                      const itemValue =
+                        typeof faq.id === "number" ? String(faq.id) : faq.id;
+
+                      return (
+                        <AccordionItem key={faq.id} value={itemValue}>
+                          <AccordionTrigger className="text-left">
+                            {faq.question}
+                          </AccordionTrigger>
+                          <AccordionContent className="text-gray-600">
+                            {faq.answer}
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
