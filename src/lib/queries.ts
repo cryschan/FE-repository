@@ -45,7 +45,7 @@ export const queryKeys = {
   },
   //faq 추가
   faqs: {
-    faqs: ["faqs", "all"] as const,
+    all: ["faqs", "all"] as const,
   },
 } as const;
 
