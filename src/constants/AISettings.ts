@@ -1,13 +1,4 @@
-export const CATEGORIES = [
-  "남성 의류",
-  "여성 의류",
-  "생활용품",
-  "신발",
-  "메이크업 제품",
-  "액세서리",
-  "전자제품",
-  "식품",
-] as const;
+export const CATEGORIES = ["상의", "하의", "아우터", "신발", "ACC"] as const;
 
 export const BLOG_PLATFORMS = [
   "네이버 블로그",
