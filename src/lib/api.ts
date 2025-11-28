@@ -6,13 +6,17 @@ import type {
   LoginRequest,
   LoginResponse,
   EmailCheckResponse,
-  BlogTemplateResponse,
-  BlogTemplateCreateRequest,
   BlogsMyResponse,
   DashboardResponse,
-  FAQsResponse,
+  BlogTemplateResponse,
+  BlogTemplateCreateRequest,
+  CreateUploadRequest,
+  CreateUploadResponse,
+  BlogUpdateRequest,
+  Blog,
   RefreshRequest,
   RefreshResponse,
+  FAQsResponse,
 } from "./api.types";
 // 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
 export type * from "./api.types";
@@ -87,6 +91,21 @@ export const createBlogTemplate = async (
   return api
     .post("api/blog-templates", { json: data })
     .json<BlogTemplateResponse>();
+};
+
+// ===== Uploads =====
+export const createUpload = async (
+  data: CreateUploadRequest
+): Promise<CreateUploadResponse> => {
+  return api.post("api/uploads", { json: data }).json<CreateUploadResponse>();
+};
+
+// ===== Blogs =====
+export const updateBlog = async (
+  blogId: number | string,
+  data: BlogUpdateRequest
+): Promise<Blog> => {
+  return api.put(`api/blogs/${blogId}`, { json: data }).json<Blog>();
 };
 
 // ===== Auth =====
@@ -198,7 +217,7 @@ export const logout = async () => {
 
   setTimeout(() => {
     window.location.href = "/auth";
-  }, 1000);
+  }, 2000);
 };
 
 // ===== 에러 핸들링 유틸리티 =====

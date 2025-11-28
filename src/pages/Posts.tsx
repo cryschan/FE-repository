@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,11 +26,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Edit, ChevronLeft, ChevronRight, Copy } from "lucide-react";
+import { Edit, ChevronLeft, ChevronRight, Copy, ImagePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+// @ts-ignore
+import remarkGfm from "remark-gfm";
+// @ts-ignore
+import rehypeRaw from "rehype-raw";
 import { useToast } from "@/hooks/use-toast";
 import { useMyBlogsQuery, queryKeys } from "@/lib/queries";
 import { formatDateKorean } from "@/lib/utils";
+import { CATEGORIES as TEMPLATE_CATEGORIES } from "@/constants/AISettings";
+import { createUpload, getErrorMessage, updateBlog } from "@/lib/api";
 
 type Post = {
   id: number;
@@ -41,17 +47,7 @@ type Post = {
   isToday: boolean;
 };
 
-const CATEGORIES = [
-  "전체",
-  "남성 의류",
-  "여성 의류",
-  "생활용품",
-  "신발",
-  "메이크업 제품",
-  "액세서리",
-  "전자제품",
-  "식품",
-];
+const FILTER_CATEGORIES = ["전체", ...TEMPLATE_CATEGORIES] as const;
 
 const Posts = () => {
   const { toast } = useToast();
@@ -64,10 +60,11 @@ const Posts = () => {
   const [markdown, setMarkdown] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("전체");
   const [currentPage, setCurrentPage] = useState(1);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  // 서버 데이터 (페이지 단위)
-  const { data, isLoading } = useMyBlogsQuery(currentPage);
-  // 오늘 추가된 글 고정용: 항상 page=1 응답 기준
+  const { data } = useMyBlogsQuery(currentPage);
   const { data: firstPageData } = useMyBlogsQuery(1);
 
   // 서버 응답을 로컬 포맷으로 동기화
@@ -96,6 +93,7 @@ const Posts = () => {
     setTitle("");
     setMarkdown("");
     setEditingPost(null);
+    setIsUploading(false);
   };
 
   const handleSave = async () => {
@@ -108,52 +106,141 @@ const Posts = () => {
     }
 
     if (editingPost) {
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === editingPost.id
-            ? { ...post, title: title.trim(), content: markdown }
-            : post
-        )
-      );
-      // Query 캐시도 동기화 (현재 페이지 데이터)
       try {
-        queryClient.setQueryData(
-          queryKeys.blogs.my(currentPage),
-          (old: any) => {
-            if (!old || !old.blogs) return old;
-            const next = {
-              ...old,
-              blogs: old.blogs.map((b: any) =>
-                String(b.id) === String(editingPost.id)
-                  ? { ...b, title: title.trim(), content: markdown }
-                  : b
-              ),
-            };
-            return next;
-          }
-        );
-      } catch {}
-
-      // 클립보드에 복사
-      try {
-        const textToCopy = `${title.trim()}\n\n${markdown}`;
-        await navigator.clipboard.writeText(textToCopy);
-        toast({
-          title: "저장 및 복사 완료",
-          description: "게시글이 수정되고 클립보드에 복사되었습니다.",
-          variant: "success",
+        await updateBlog(editingPost.id, {
+          title: title.trim(),
+          content: markdown,
+          category: editingPost.category,
         });
-      } catch (error) {
+        // 로컬 목록/캐시 동기화
+        setPosts((prev) =>
+          prev.map((post) =>
+            post.id === editingPost.id
+              ? { ...post, title: title.trim(), content: markdown }
+              : post
+          )
+        );
+        try {
+          queryClient.setQueryData(
+            queryKeys.blogs.my(currentPage),
+            (old: any) => {
+              if (!old || !old.blogs) return old;
+              const next = {
+                ...old,
+                blogs: old.blogs.map((b: any) =>
+                  String(b.id) === String(editingPost.id)
+                    ? { ...b, title: title.trim(), content: markdown }
+                    : b
+                ),
+              };
+              return next;
+            }
+          );
+        } catch {}
+        // 클립보드 복사
+        try {
+          const textToCopy = `${title.trim()}\n\n${markdown}`;
+          await navigator.clipboard.writeText(textToCopy);
+          toast({
+            title: "저장 및 복사 완료",
+            description: "게시글이 수정되고 클립보드에 복사되었습니다.",
+            variant: "success",
+          });
+        } catch {
+          toast({
+            title: "게시글이 수정되었습니다",
+            description: "클립보드 복사에 실패했습니다.",
+            variant: "success",
+          });
+        }
+      } catch (err) {
+        const message = await getErrorMessage(err);
         toast({
-          title: "게시글이 수정되었습니다",
-          description: "클립보드 복사에 실패했습니다.",
+          title: "수정 실패",
+          description: message,
           variant: "destructive",
         });
+        return;
       }
     }
 
     resetForm();
     setOpen(false);
+  };
+
+  // 이미지 업로드 시 ![alt](url) 마크다운을 커서 위치에 삽입
+  const insertAtCursor = (text: string) => {
+    const el = textareaRef.current;
+    if (!el) {
+      setMarkdown((prev) => (prev ? `${prev}\n${text}` : text));
+      return;
+    }
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const before = markdown.slice(0, start);
+    const after = markdown.slice(end);
+    const next = `${before}${text}${after}`;
+    setMarkdown(next);
+    requestAnimationFrame(() => {
+      const pos = start + text.length;
+      el.selectionStart = el.selectionEnd = pos;
+      el.focus();
+    });
+  };
+
+  const handleInsertImageMarkdown = (url: string, alt?: string) => {
+    const safeAlt = (alt || "image").replace(/\n/g, " ").trim();
+    const md = `\n![${safeAlt}](${url})\n`;
+    insertAtCursor(md);
+  };
+
+  const handlePickImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  const uploadToS3 = async (file: File): Promise<string> => {
+    const contentType = file.type || "application/octet-stream";
+    const request = {
+      fileName: file.name,
+      contentType,
+    };
+    const { presignedUrl, finalUrl } = await createUpload(request);
+    const res = await fetch(presignedUrl, {
+      method: "PUT",
+      headers: { "Content-Type": contentType },
+      body: file,
+    });
+    if (!res.ok) throw new Error(`S3 업로드 실패 (${res.status})`);
+    return finalUrl;
+  };
+
+  const replaceImageUrlInMarkdown = (oldUrl: string, newUrl: string) => {
+    setMarkdown((prev) => prev.split(`](${oldUrl})`).join(`](${newUrl})`));
+  };
+
+  const handleFileChange: React.ChangeEventHandler<HTMLInputElement> = async (
+    e
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploading(true);
+      const blobUrl = URL.createObjectURL(file);
+      handleInsertImageMarkdown(blobUrl, file.name);
+      e.target.value = "";
+      // 업로드 완료 후 blob URL을 최종 URL로 치환
+      const finalUrl = await uploadToS3(file);
+      replaceImageUrlInMarkdown(blobUrl, finalUrl);
+    } catch (err) {
+      const message = await getErrorMessage(err);
+      toast({
+        title: "이미지 업로드 실패",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // 필터링
@@ -208,7 +295,7 @@ const Posts = () => {
               <SelectValue placeholder="카테고리 선택" />
             </SelectTrigger>
             <SelectContent>
-              {CATEGORIES.map((category) => (
+              {FILTER_CATEGORIES.map((category) => (
                 <SelectItem key={category} value={category}>
                   {category}
                 </SelectItem>
@@ -356,29 +443,63 @@ const Posts = () => {
                 />
               </div>
 
-              <Tabs defaultValue="edit" className="w-full">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  이미지를 업로드해 본문에 삽입할 수 있어요.
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePickImage}
+                    disabled={isUploading}
+                    className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground gap-2"
+                  >
+                    <ImagePlus className="w-4 h-4" />
+                    {isUploading ? "업로드 중..." : "이미지 업로드"}
+                  </Button>
+                </div>
+              </div>
+
+              <Tabs defaultValue="preview" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="edit">편집</TabsTrigger>
                   <TabsTrigger value="preview">미리보기</TabsTrigger>
+                  <TabsTrigger value="edit">편집</TabsTrigger>
                 </TabsList>
 
+                <TabsContent value="preview">
+                  <Card className="min-h-[420px] p-6 bg-background">
+                    <article className="prose prose-slate max-w-none dark:prose-invert">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeRaw]}
+                        components={{
+                          img: ({ node, ...props }) => (
+                            // eslint-disable-next-line jsx-a11y/alt-text
+                            <img {...props} style={{ maxWidth: "100%" }} />
+                          ),
+                        }}
+                      >
+                        {markdown || "미리볼 내용이 없습니다."}
+                      </ReactMarkdown>
+                    </article>
+                  </Card>
+                </TabsContent>
                 <TabsContent value="edit">
                   <Textarea
+                    ref={textareaRef}
                     value={markdown}
                     onChange={(e) => setMarkdown(e.target.value)}
                     placeholder="마크다운으로 작성하세요..."
                     className="min-h-[420px] font-mono"
                   />
-                </TabsContent>
-
-                <TabsContent value="preview">
-                  <Card className="min-h-[420px] p-6 bg-background">
-                    <article className="prose prose-slate max-w-none dark:prose-invert">
-                      <ReactMarkdown>
-                        {markdown || "미리볼 내용이 없습니다."}
-                      </ReactMarkdown>
-                    </article>
-                  </Card>
                 </TabsContent>
               </Tabs>
 
