@@ -468,21 +468,11 @@ const Posts = () => {
                 </div>
               </div>
 
-              <Tabs defaultValue="edit" className="w-full">
+              <Tabs defaultValue="preview" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4">
-                  <TabsTrigger value="edit">편집</TabsTrigger>
                   <TabsTrigger value="preview">미리보기</TabsTrigger>
+                  <TabsTrigger value="edit">편집</TabsTrigger>
                 </TabsList>
-
-                <TabsContent value="edit">
-                  <Textarea
-                    ref={textareaRef}
-                    value={markdown}
-                    onChange={(e) => setMarkdown(e.target.value)}
-                    placeholder="마크다운으로 작성하세요..."
-                    className="min-h-[420px] font-mono"
-                  />
-                </TabsContent>
 
                 <TabsContent value="preview">
                   <Card className="min-h-[420px] p-6 bg-background">
@@ -501,6 +491,15 @@ const Posts = () => {
                       </ReactMarkdown>
                     </article>
                   </Card>
+                </TabsContent>
+                <TabsContent value="edit">
+                  <Textarea
+                    ref={textareaRef}
+                    value={markdown}
+                    onChange={(e) => setMarkdown(e.target.value)}
+                    placeholder="마크다운으로 작성하세요..."
+                    className="min-h-[420px] font-mono"
+                  />
                 </TabsContent>
               </Tabs>
 
