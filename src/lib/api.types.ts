@@ -25,7 +25,16 @@ export type LoginResponse = {
   username: string;
   createdAt: string;
   role: string;
-  token: string;
+  accessToken: string;
+  refreshToken: string;
+};
+
+export type RefreshRequest = {
+  refreshToken: string;
+};
+
+export type RefreshResponse = {
+  accessToken: string;
 };
 
 export type EmailCheckResponse = {
@@ -116,3 +125,14 @@ export type DashboardResponse = {
     createdAt: string;
   }>;
 };
+
+// ==== FAQs ====
+export type FAQs = {
+  id: number;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  createdAt: string;
+};
+
+export type FAQsResponse = FAQs[];
