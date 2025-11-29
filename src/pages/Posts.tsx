@@ -64,8 +64,11 @@ const Posts = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data } = useMyBlogsQuery(currentPage);
-  const { data: firstPageData } = useMyBlogsQuery(1);
+  // 서버 요청용 카테고리: "전체"는 undefined로 처리하여 파라미터를 생략
+  const requestCategory =
+    selectedCategory === "전체" ? undefined : selectedCategory;
+  const { data } = useMyBlogsQuery(currentPage, requestCategory);
+  const { data: firstPageData } = useMyBlogsQuery(1, requestCategory);
 
   // 서버 응답을 로컬 포맷으로 동기화
   useEffect(() => {
@@ -122,7 +125,7 @@ const Posts = () => {
         );
         try {
           queryClient.setQueryData(
-            queryKeys.blogs.my(currentPage),
+            queryKeys.blogs.my(currentPage, requestCategory),
             (old: any) => {
               if (!old || !old.blogs) return old;
               const next = {
@@ -391,33 +394,31 @@ const Posts = () => {
         </Card>
 
         {/* 페이지네이션 */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {currentPage} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {currentPage} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
+            disabled={currentPage === totalPages}
+            className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
 
         {/* 수정 다이얼로그 */}
         <Dialog
