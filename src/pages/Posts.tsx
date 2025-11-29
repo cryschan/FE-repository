@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,8 +64,22 @@ const Posts = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { data } = useMyBlogsQuery(currentPage);
-  const { data: firstPageData } = useMyBlogsQuery(1);
+  // 이미지 업로드 제한
+  const MAX_IMAGES = 10;
+  const countImagesInMarkdown = (md: string): number => {
+    if (!md) return 0;
+    const markdownImgs =
+      md.match(/!\[[^\]]*\]\([^)\s]+(?:\s+"[^"]*")?\)/g) || [];
+    const htmlImgs = md.match(/<img\b[^>]*src=["'][^"']+["'][^>]*>/gi) || [];
+    return markdownImgs.length + htmlImgs.length;
+  };
+  const imageCount = useMemo(() => countImagesInMarkdown(markdown), [markdown]);
+
+  // 서버 요청용 카테고리: "전체"는 undefined로 처리하여 파라미터를 생략
+  const requestCategory =
+    selectedCategory === "전체" ? undefined : selectedCategory;
+  const { data } = useMyBlogsQuery(currentPage, requestCategory);
+  const { data: firstPageData } = useMyBlogsQuery(1, requestCategory);
 
   // 서버 응답을 로컬 포맷으로 동기화
   useEffect(() => {
@@ -122,7 +136,7 @@ const Posts = () => {
         );
         try {
           queryClient.setQueryData(
-            queryKeys.blogs.my(currentPage),
+            queryKeys.blogs.my(currentPage, requestCategory),
             (old: any) => {
               if (!old || !old.blogs) return old;
               const next = {
@@ -195,6 +209,14 @@ const Posts = () => {
   };
 
   const handlePickImage = () => {
+    if (imageCount >= MAX_IMAGES) {
+      toast({
+        title: "이미지 제한",
+        description: `이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있습니다.`,
+        variant: "destructive",
+      });
+      return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -223,6 +245,16 @@ const Posts = () => {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    // 업로드 전 현재 본문 이미지 수 확인
+    if (countImagesInMarkdown(markdown) >= MAX_IMAGES) {
+      toast({
+        title: "이미지 제한",
+        description: `이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있습니다.`,
+        variant: "destructive",
+      });
+      e.target.value = "";
+      return;
+    }
     try {
       setIsUploading(true);
       const blobUrl = URL.createObjectURL(file);
@@ -391,33 +423,31 @@ const Posts = () => {
         </Card>
 
         {/* 페이지네이션 */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-              disabled={currentPage === 1}
-              className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              {currentPage} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-              }
-              disabled={currentPage === totalPages}
-              className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {currentPage} / {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+            }
+            disabled={currentPage === totalPages}
+            className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
 
         {/* 수정 다이얼로그 */}
         <Dialog
@@ -455,11 +485,16 @@ const Posts = () => {
                     onChange={handleFileChange}
                     className="hidden"
                   />
+                  {imageCount >= MAX_IMAGES && (
+                    <span className="text-xs text-muted-foreground">
+                      최대 {MAX_IMAGES}개 첨부 가능
+                    </span>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handlePickImage}
-                    disabled={isUploading}
+                    disabled={isUploading || imageCount >= MAX_IMAGES}
                     className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground gap-2"
                   >
                     <ImagePlus className="w-4 h-4" />
