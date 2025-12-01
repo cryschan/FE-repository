@@ -33,7 +33,8 @@ export const queryKeys = {
     detail: (id: string) => ["posts", id] as const,
   },
   blogs: {
-    my: (page: number) => ["blogs", "my", page] as const,
+    my: (page: number, category?: string) =>
+      ["blogs", "my", page, category ?? "전체"] as const,
   },
   profile: {
     me: ["profile", "me"] as const,
@@ -156,10 +157,10 @@ export const useEmailCheckMutation = () => {
 /**
  * 내 블로그 글 조회 (페이지)
  */
-export const useMyBlogsQuery = (page: number) => {
+export const useMyBlogsQuery = (page: number, category?: string) => {
   return useQuery({
-    queryKey: queryKeys.blogs.my(page),
-    queryFn: (): Promise<BlogsMyResponse> => getMyBlogs(page),
+    queryKey: queryKeys.blogs.my(page, category),
+    queryFn: (): Promise<BlogsMyResponse> => getMyBlogs(page, category),
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
   });

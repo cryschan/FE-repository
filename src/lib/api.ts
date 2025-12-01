@@ -162,13 +162,15 @@ export const checkEmailAvailability = async (
  * 내 블로그 글 조회 (페이지)
  */
 export const getMyBlogs = async (
-  page: number = 1
+  page: number = 1,
+  category?: string
 ): Promise<BlogsMyResponse> => {
-  return api
-    .get("api/blogs/my", {
-      searchParams: { page: String(page) },
-    })
-    .json<BlogsMyResponse>();
+  const searchParams: Record<string, string> = { page: String(page) };
+  // category가 존재하고 "전체"가 아닌 경우에만 쿼리 파라미터로 추가
+  if (category && category.trim() && category !== "전체") {
+    searchParams.category = category;
+  }
+  return api.get("api/blogs/my", { searchParams }).json<BlogsMyResponse>();
 };
 
 /**
