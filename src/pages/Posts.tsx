@@ -36,7 +36,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useMyBlogsQuery, queryKeys } from "@/lib/queries";
 import { formatDateKorean } from "@/lib/utils";
 import { CATEGORIES as TEMPLATE_CATEGORIES } from "@/constants/AISettings";
-import { createUpload, getErrorMessage, updateBlog } from "@/lib/api";
+import {
+  createUpload,
+  generateBlogNow,
+  getErrorMessage,
+  updateBlog,
+} from "@/lib/api";
 
 type Post = {
   id: number;
@@ -63,6 +68,7 @@ const Posts = () => {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   // 이미지 업로드 제한
   const MAX_IMAGES = 10;
@@ -322,18 +328,61 @@ const Posts = () => {
             </p>
           </div>
 
-          <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="카테고리 선택" />
-            </SelectTrigger>
-            <SelectContent>
-              {FILTER_CATEGORIES.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={async () => {
+                try {
+                  setGenerating(true);
+                  const result = await generateBlogNow();
+                  toast({
+                    title: "블로그 글 생성 완료",
+                    description: result.message,
+                    variant: "success",
+                  });
+                  // 첫 페이지와 현재 페이지 데이터 새로고침
+                  try {
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.blogs.my(1, requestCategory),
+                    });
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.blogs.my(
+                        currentPage,
+                        requestCategory
+                      ),
+                    });
+                  } catch {}
+                } catch (error) {
+                  const msg = await getErrorMessage(error);
+                  toast({
+                    title: "글 생성 실패",
+                    description: msg,
+                    variant: "destructive",
+                  });
+                } finally {
+                  setGenerating(false);
+                }
+              }}
+              disabled={generating}
+              className="bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
+              {generating ? "생성 중..." : "지금 바로 생성"}
+            </Button>
+            <Select
+              value={selectedCategory}
+              onValueChange={handleCategoryChange}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="카테고리 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {FILTER_CATEGORIES.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* 오늘 추가된 글 */}
@@ -363,9 +412,10 @@ const Posts = () => {
                   </p>
                 </div>
                 <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => openEditDialog(todayPost)}
-                  className="ml-4 gap-2 bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  className="ml-4 gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
                 >
                   <Edit className="w-4 h-4" />
                   수정하기
@@ -407,9 +457,10 @@ const Posts = () => {
                         </p>
                       </div>
                       <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => openEditDialog(post)}
-                        className="ml-4 gap-2 bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        className="ml-4 gap-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
                       >
                         <Edit className="w-4 h-4" />
                         수정하기
