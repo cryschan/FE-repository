@@ -10,7 +10,7 @@ import Support from "./pages/Support";
 import NotFound from "./pages/NotFound";
 import Posts from "./pages/Posts";
 import Profile from "./pages/Profile";
-import Admin from "./pages/Admin";
+import Inquiry from "./pages/Inquiry";
 import AISettings from "./pages/AISettings";
 import { RequireAuth, PublicOnly, RequireAdmin } from "@/routes/guards";
 
@@ -69,10 +69,10 @@ const App = () => (
               }
             />
             <Route
-              path="/admin"
+              path="/inquiry"
               element={
                 <RequireAdmin>
-                  <Admin />
+                  <Inquiry />
                 </RequireAdmin>
               }
             />

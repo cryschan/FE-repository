@@ -36,6 +36,8 @@ import {
 } from "@/components/ui/select";
 import { Plus, MessageSquare, Clock, CheckCircle, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import FAQSection from "./support/FAQSection";
+import MyInquiriesSection from "./support/MyInquiriesSection";
 
 type Inquiry = {
   id: string;
@@ -76,7 +78,7 @@ const initialInquiries: Inquiry[] = [
   },
 ];
 
-const CATEGORIES = ["기술 문의", "기능 문의", "결제/환불", "계정/보안", "기타"];
+const CATEGORIES = ["기능 문의", "결제/환불", "계정 문의", "기타"];
 
 const Support = () => {
   const { toast } = useToast();
@@ -84,10 +86,7 @@ const Support = () => {
   const [selectedTab, setSelectedTab] = useState("faq");
   const [open, setOpen] = useState(false);
 
-  const {
-    data: faqsData,
-    isError: isFAQsError,
-  } = useFAQsQuery();
+  const { data: faqsData, isError: isFAQsError } = useFAQsQuery();
 
   // FAQ 데이터를 메모이제이션하여 안정적인 참조 유지
   const faqs = useMemo(() => faqsData ?? [], [faqsData]);
@@ -218,113 +217,11 @@ const Support = () => {
           </TabsList>
 
           <TabsContent value="faq" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>자주 묻는 질문</CardTitle>
-                <CardDescription>
-                  일반적인 질문에 대한 답변을 확인하세요
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isFAQsError ? (
-                  <div className="text-center py-8 text-red-500">
-                    FAQ를 불러오는 중 오류가 발생했습니다.
-                  </div>
-                ) : faqs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    등록된 FAQ가 없습니다.
-                  </div>
-                ) : (
-                  <Accordion type="single" collapsible className="w-full">
-                    {faqs.map((faq) => {
-                      // 타입 안정성을 위해 명시적으로 문자열 변환
-                      const itemValue =
-                        typeof faq.id === "number" ? String(faq.id) : faq.id;
-
-                      return (
-                        <AccordionItem key={faq.id} value={itemValue}>
-                          <AccordionTrigger className="text-left">
-                            {faq.question}
-                          </AccordionTrigger>
-                          <AccordionContent className="text-gray-600">
-                            {faq.answer}
-                          </AccordionContent>
-                        </AccordionItem>
-                      );
-                    })}
-                  </Accordion>
-                )}
-              </CardContent>
-            </Card>
+            <FAQSection faqs={faqs} isError={isFAQsError} />
           </TabsContent>
 
           <TabsContent value="my-inquiries" className="mt-6">
-            <div className="space-y-4">
-              {inquiries.map((inquiry) => (
-                <Card key={inquiry.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge
-                            variant={
-                              inquiry.status === "answered"
-                                ? "default"
-                                : "secondary"
-                            }
-                          >
-                            {inquiry.status === "answered" ? (
-                              <span className="flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" />
-                                답변완료
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                대기중
-                              </span>
-                            )}
-                          </Badge>
-                          <Badge variant="outline">{inquiry.category}</Badge>
-                        </div>
-                        <CardTitle>{inquiry.title}</CardTitle>
-                        <CardDescription className="mt-2">
-                          작성일: {inquiry.createdAt}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  {inquiry.answer && (
-                    <CardContent>
-                      <div className="bg-blue-50 p-4 rounded-lg">
-                        <p className="text-blue-900">
-                          <strong>답변:</strong> {inquiry.answer}
-                        </p>
-                      </div>
-                    </CardContent>
-                  )}
-
-                  {inquiry.content && !inquiry.answer && (
-                    <CardContent>
-                      <div className="bg-muted/30 p-4 rounded-lg">
-                        <p className="text-muted-foreground">
-                          {inquiry.content}
-                        </p>
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
-
-              {inquiries.length === 0 && (
-                <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    아직 문의 내역이 없습니다.
-                  </CardContent>
-                </Card>
-              )}
-            </div>
+            <MyInquiriesSection inquiries={inquiries} />
           </TabsContent>
         </Tabs>
       </div>

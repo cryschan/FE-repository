@@ -31,7 +31,7 @@ Auth & guards
   - RequireAdmin: token + role === "ADMIN" only; else redirect to /
 - Routes:
   - Public: /auth, 404
-  - Protected (inside AppLayout with sidebar/topbar): /, /ai-settings, /posts, /support, /profile, /dashboard(ADMIN), /admin(ADMIN)
+  - Protected (inside AppLayout with sidebar/topbar): /, /ai-settings, /posts, /support, /profile, /dashboard(ADMIN), /inquiry(ADMIN)
 - Topbar greeting: “👋🏻 안녕하세요, {userName}님” else userEmail
 
 
