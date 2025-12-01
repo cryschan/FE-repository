@@ -14,6 +14,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   TemplateTitleSection,
   CategoriesSection,
   PlatformsSection,
@@ -46,6 +53,7 @@ const AISettings = () => {
   const [hasTemplate, setHasTemplate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -226,7 +234,8 @@ const AISettings = () => {
       }
       setImageCount("0");
     } else {
-      setImageCount(lastImageCount || "1");
+      // 토글을 켜면 이미지 개수를 1개로 고정
+      setImageCount("1");
     }
   };
 
@@ -243,19 +252,89 @@ const AISettings = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">AI 글쓰기 설정</h1>
           <p className="text-muted-foreground mt-1">
-            블로그 콘텐츠 자동 생성을 위한 템플릿을 설정하세요
+            나만의 템플릿을 만들고 관리하세요
           </p>
         </div>
 
-        <Card className="shadow-elevated max-w-4xl">
-          <CardHeader>
-            <CardTitle>블로그 템플릿 설정</CardTitle>
-            <CardDescription>
-              AI가 블로그 글을 생성할 때 사용할 설정을 지정하세요
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSave} className="space-y-6">
+        {/* 목록 화면 */}
+        <div className="max-w-4xl space-y-4">
+          {loading ? (
+            <Card className="shadow-elevated">
+              <CardContent className="p-6 text-muted-foreground">
+                템플릿 정보를 불러오는 중입니다...
+              </CardContent>
+            </Card>
+          ) : hasTemplate ? (
+            <Card className="shadow-elevated">
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>{title || "내 템플릿"}</span>
+                  <Button
+                    onClick={() => setOpen(true)}
+                    className="bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  >
+                    수정하기
+                  </Button>
+                </CardTitle>
+                <CardDescription>
+                  템플릿을 수정하면 이후 생성되는 글에 적용돼요
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <div>카테고리: {selectedCategories.join(", ") || "-"}</div>
+                  <div>블로그: {selectedBlogs.join(", ") || "-"}</div>
+                  <div>쇼핑몰 URL: {shopUrl || "-"}</div>
+                  <div>
+                    이미지 포함:{" "}
+                    {includeImage ? `예 (${imageCount}개)` : "아니오"}
+                  </div>
+                  <div>글자수 제한: {wordCount}자</div>
+                  <div>매일 생성 시간: {generationTime}</div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="shadow-elevated">
+              <CardHeader>
+                <CardTitle>아직 템플릿이 없어요</CardTitle>
+                <CardDescription>
+                  버튼을 눌러 나만의 템플릿을 생성해 보세요
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex justify-end">
+                <Button
+                  onClick={() => setOpen(true)}
+                  className="bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                >
+                  나만의 템플릿 설정하기
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* 생성/수정 모달 */}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {hasTemplate ? "템플릿 수정" : "템플릿 생성"}
+              </DialogTitle>
+              <DialogDescription>
+                AI가 블로그 글을 생성할 때 사용할 설정을 지정하세요
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              onSubmit={async (e) => {
+                await handleSave(e);
+                // 생성 성공 시 모달 닫기 (수정은 안내 토스트만)
+                if (!hasTemplate) {
+                  setOpen(false);
+                }
+              }}
+              className="space-y-6"
+            >
               <TemplateTitleSection
                 title={title}
                 setTitle={setTitle}
@@ -303,8 +382,8 @@ const AISettings = () => {
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

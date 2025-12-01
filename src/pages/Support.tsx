@@ -1,21 +1,7 @@
 import { useState, useMemo } from "react";
 import { useFAQsQuery } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   Dialog,
   DialogContent,
@@ -34,10 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, MessageSquare, Clock, CheckCircle, Send } from "lucide-react";
+import { Plus, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import FAQSection from "./support/FAQSection";
-import MyInquiriesSection from "./support/MyInquiriesSection";
+import FAQSection from "@/components/support/FAQSection";
+import MyInquiriesSection from "@/components/support/MyInquiriesSection";
 
 type Inquiry = {
   id: string;
