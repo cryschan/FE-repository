@@ -93,6 +93,19 @@ export const createBlogTemplate = async (
     .json<BlogTemplateResponse>();
 };
 
+export type GenerateNowResponse = {
+  message: string;
+  templateTitle: string;
+};
+
+/**
+ * 블로그 글 즉시 생성
+ * 현재 템플릿 설정 기반으로 크롤링 + AI 요약 + 블로그 저장 수행
+ */
+export const generateBlogNow = async (): Promise<GenerateNowResponse> => {
+  return api.post("api/blog-templates/generate-now").json<GenerateNowResponse>();
+};
+
 // ===== Uploads =====
 export const createUpload = async (
   data: CreateUploadRequest
