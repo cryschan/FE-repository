@@ -77,7 +77,7 @@ const initialInquiries: AdminInquiry[] = [
   },
 ];
 
-const Admin = () => {
+const Inquiry = () => {
   const { toast } = useToast();
 
   const [inquiries, setInquiries] = useState<AdminInquiry[]>(initialInquiries);
@@ -133,7 +133,7 @@ const Admin = () => {
   return (
     <div className="bg-gradient-subtle">
       <div className="w-full mx-auto p-8 space-y-6">
-        <h1 className="text-3xl font-bold text-foreground">관리자페이지</h1>
+        <h1 className="text-3xl font-bold text-foreground">고객 문의 관리</h1>
 
         <Card className="shadow-elevated">
           <CardHeader>
@@ -262,4 +262,4 @@ const Admin = () => {
   );
 };
 
-export default Admin;
+export default Inquiry;

@@ -39,7 +39,7 @@ export const SECTIONS: SidebarSection[] = [
     icon: ShieldCheck,
     items: [
       { title: "대시보드", to: "/dashboard" },
-      { title: "관리자페이지", to: "/admin" },
+      { title: "고객 문의 관리", to: "/inquiry" },
     ],
   },
 ];
