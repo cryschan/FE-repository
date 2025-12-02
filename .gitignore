@@ -42,9 +42,11 @@ bun.lockb
 
 # Environment variables
 .env
-.env.*
+.env.local
+.env.development
+.env.development.local
 !.env.example
-!.env.*.example
+!.env.production
 
 # Coverage / reports
 coverage
@@ -63,3 +65,4 @@ Thumbs.db
 # Build analysis reports
 stats.html
 stats-*.html
+.env*.local
