@@ -5,6 +5,8 @@ import {
   ArrowUp,
   ArrowDown,
   Minus,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import {
   Bar,
@@ -427,41 +429,67 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {todayBlogList.map((article) => (
-                  <div
-                    key={`${article.title}-${article.createdAt}`}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-medium text-foreground truncate">
-                          {article.title}
-                        </h3>
-                        {article.username && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs font-normal"
-                          >
-                            {article.username}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {article.platform}
-                        </Badge>
-                        {article.category && (
+                {todayBlogList.map((article) => {
+                  const isSuccess = article.publishStatus === "PUBLISHED";
+                  const isFailed = article.publishStatus === "FAILED";
+
+                  return (
+                    <div
+                      key={`${article.title}-${article.createdAt}`}
+                      className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <h3 className="font-medium text-foreground truncate">
+                            {article.title}
+                          </h3>
+                          {article.username && (
+                            <Badge
+                              variant="secondary"
+                              className="text-xs font-normal"
+                            >
+                              {article.username}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
                           <Badge variant="outline" className="text-xs">
-                            {article.category}
+                            {article.platform}
                           </Badge>
+                          {article.category && (
+                            <Badge variant="outline" className="text-xs">
+                              {article.category}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {formatDate(article.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 ml-4 shrink-0">
+                        {isSuccess && (
+                          <div className="flex items-center gap-1.5 text-green-600 dark:text-green-500">
+                            <CheckCircle2 className="w-5 h-5" />
+                            <span className="text-xs font-medium">성공</span>
+                          </div>
                         )}
-                        <span className="text-xs text-muted-foreground">
-                          {formatDate(article.createdAt)}
-                        </span>
+                        {isFailed && (
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1.5 text-red-600">
+                              <XCircle className="w-4 h-4" />
+                              <span className="text-xs font-medium">실패</span>
+                            </div>
+                            {article.failureReason && (
+                              <span className="text-xs text-red-500/80 max-w-[200px] text-right">
+                                {article.failureReason}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>

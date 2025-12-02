@@ -125,6 +125,8 @@ export type DashboardResponse = {
     category: string;
     createdAt: string;
     username: string;
+    publishStatus: string;
+    failureReason?: string;
   }>;
   comparison?: {
     todayBlogCountChangeRate: number;
