@@ -93,6 +93,18 @@ export const createBlogTemplate = async (
     .json<BlogTemplateResponse>();
 };
 
+/**
+ * 블로그 템플릿 수정
+ * 현재 로그인 사용자의 템플릿을 수정합니다. userId 파라미터는 불필요.
+ */
+export const updateMyBlogTemplate = async (
+  data: BlogTemplateCreateRequest
+): Promise<BlogTemplateResponse> => {
+  return api
+    .put("api/blog-templates/me", { json: data })
+    .json<BlogTemplateResponse>();
+};
+
 export type GenerateNowResponse = {
   message: string;
   templateTitle: string;
@@ -103,7 +115,9 @@ export type GenerateNowResponse = {
  * 현재 템플릿 설정 기반으로 크롤링 + AI 요약 + 블로그 저장 수행
  */
 export const generateBlogNow = async (): Promise<GenerateNowResponse> => {
-  return api.post("api/blog-templates/generate-now").json<GenerateNowResponse>();
+  return api
+    .post("api/blog-templates/generate-now")
+    .json<GenerateNowResponse>();
 };
 
 // ===== Uploads =====
