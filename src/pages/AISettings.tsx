@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   createBlogTemplate,
+  updateMyBlogTemplate,
   getErrorMessage,
   getMyBlogTemplate,
 } from "@/lib/api";
@@ -35,6 +36,8 @@ import {
   CATEGORIES,
 } from "@/constants/AISettings";
 
+const SHOP_URL = "https://ssadagu.kr/";
+
 const AISettings = () => {
   const { toast } = useToast();
 
@@ -44,10 +47,9 @@ const AISettings = () => {
     ...CATEGORIES,
   ]);
   const [selectedBlogs, setSelectedBlogs] = useState<string[]>([]);
-  const [shopUrl, setShopUrl] = useState("https://ssadagu.kr/");
+  const [shopUrl, setShopUrl] = useState(SHOP_URL);
   const [includeImage, setIncludeImage] = useState(false);
   const [imageCount, setImageCount] = useState("0");
-  const [lastImageCount, setLastImageCount] = useState("0");
   const [wordCount, setWordCount] = useState("500");
   const [generationTime, setGenerationTime] = useState("08:00");
   const [hasTemplate, setHasTemplate] = useState(false);
@@ -81,10 +83,8 @@ const AISettings = () => {
         if (data.includeImages && data.imageCount != null) {
           const cnt = String(data.imageCount);
           setImageCount(cnt);
-          setLastImageCount(cnt);
         } else {
           setImageCount("0");
-          setLastImageCount("1");
         }
         setWordCount(String(data.charLimit || 500));
         const time = (data.dailyPostTime || "08:00:00").slice(0, 5);
@@ -136,102 +136,115 @@ const AISettings = () => {
     );
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ===== Helpers =====
+  const normalizeDailyPostTime = (time: string): string => {
+    return time && time.length === 5 ? `${time}:00` : time || "08:00:00";
+  };
 
-    if (hasTemplate) {
+  const buildTemplateRequest = () => {
+    const platformSlugs = selectedBlogs.map(
+      (b) => PLATFORM_DISPLAY_TO_SLUG[b] || b
+    );
+    const charLimitNum = Number(wordCount);
+    const includeImages = !!includeImage;
+    const imageCountNum = includeImages ? Number(imageCount) : 0;
+    const dailyPostTime = normalizeDailyPostTime(generationTime);
+
+    const payload = {
+      title: title?.trim() || "블로그 템플릿",
+      categories: selectedCategories.filter((c) =>
+        (CATEGORIES as readonly string[]).includes(c)
+      ),
+      platforms: platformSlugs,
+      shopUrl: shopUrl.trim(),
+      includeImages,
+      imageCount: imageCountNum,
+      charLimit: charLimitNum,
+      dailyPostTime,
+    };
+
+    return { payload };
+  };
+
+  const submitTemplate = async (payload: any): Promise<boolean> => {
+    setSubmitting(true);
+    try {
+      if (hasTemplate) {
+        await updateMyBlogTemplate(payload);
+        toast({
+          title: "템플릿이 수정되었습니다",
+          description: "변경사항이 저장되었습니다.",
+          variant: "success",
+        });
+        setOpen(false);
+      } else {
+        await createBlogTemplate(payload);
+        setHasTemplate(true);
+        const successToast = {
+          title: "템플릿이 생성되었습니다",
+          description: "AI 블로그 템플릿이 성공적으로 저장되었습니다.",
+          variant: "success",
+        } as const;
+        toast(successToast);
+        // 새로고침 대신 모달만 닫고, 상단 카드가 최신 상태를 즉시 보여주도록 유지
+        setOpen(false);
+      }
+      return true;
+    } catch (error) {
+      const message = await getErrorMessage(error);
       toast({
-        title: "수정 모드",
-        description: "수정 API는 추후에 연동될 예정입니다.",
+        title: "요청 실패",
+        description: message,
+        variant: "destructive",
       });
-      return;
+      return false;
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const handleSave = async (e: React.FormEvent): Promise<boolean> => {
+    e.preventDefault();
 
     if (selectedCategories.length === 0 || selectedBlogs.length === 0) {
       toast({
         title: "선택 필요",
         description: "관심 카테고리와 블로그를 최소 1개 이상 선택해주세요.",
       });
-      return;
+      return false;
     }
     if (!shopUrl.trim()) {
       toast({
         title: "입력값을 확인해주세요",
         description: "쇼핑몰 URL을 입력해주세요.",
       });
-      return;
+      return false;
     }
 
-    const charLimit = Number(wordCount);
-    const includeImages = !!includeImage;
-    const parsedImageCount = includeImages ? Number(imageCount) : 0;
-    const apiDailyPostTime =
-      generationTime && generationTime.length === 5
-        ? `${generationTime}:00`
-        : generationTime || "08:00:00";
-
-    const validImageCount = includeImages ? (parsedImageCount || 0) >= 1 : true;
-    const validCharLimit = Number.isFinite(charLimit) && charLimit > 0;
-    const validDailyPostTime = /^\d{2}:\d{2}(:\d{2})?$/.test(apiDailyPostTime);
-
-    if (!validCharLimit || !validDailyPostTime || !validImageCount) {
+    const { payload } = buildTemplateRequest();
+    const isCharLimitValid =
+      Number.isFinite(payload.charLimit) && payload.charLimit > 0;
+    const isDailyTimeValid = /^\d{2}:\d{2}(:\d{2})?$/.test(
+      payload.dailyPostTime
+    );
+    const isImageCountValid = payload.includeImages
+      ? (payload.imageCount || 0) >= 1
+      : true;
+    if (!isCharLimitValid || !isDailyTimeValid || !isImageCountValid) {
       toast({
         title: "입력값을 확인해주세요",
         description: "설정 값이 유효한지 확인 후 다시 시도해주세요.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
-    const platformSlugs = selectedBlogs.map(
-      (b) => PLATFORM_DISPLAY_TO_SLUG[b] || b
-    );
-
-    try {
-      setSubmitting(true);
-      await createBlogTemplate({
-        title: title?.trim() || "블로그 템플릿",
-        categories: selectedCategories.filter((c) =>
-          (CATEGORIES as readonly string[]).includes(c)
-        ),
-        platforms: platformSlugs,
-        shopUrl: shopUrl.trim(),
-        includeImages,
-        imageCount: parsedImageCount,
-        charLimit,
-        dailyPostTime: apiDailyPostTime,
-        validImageCount,
-        validCharLimit,
-        validDailyPostTime,
-      });
-      setHasTemplate(true);
-      toast({
-        title: "템플릿이 생성되었습니다",
-        description: "AI 블로그 템플릿이 성공적으로 저장되었습니다.",
-        variant: "success",
-      });
-      // 생성 완료 후 새로고침
-      setTimeout(() => {
-        window.location.reload();
-      }, 300);
-    } catch (error) {
-      const message = await getErrorMessage(error);
-      toast({
-        title: "저장 실패",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setSubmitting(false);
-    }
+    return await submitTemplate(payload);
   };
 
   const handleIncludeImageChange = (checked: boolean) => {
     setIncludeImage(checked);
     if (!checked) {
-      if (imageCount !== "0") {
-        setLastImageCount(imageCount);
-      }
       setImageCount("0");
     } else {
       // 토글을 켜면 이미지 개수를 1개로 고정
@@ -241,9 +254,6 @@ const AISettings = () => {
 
   const handleImageCountChange = (value: string) => {
     setImageCount(value);
-    if (includeImage) {
-      setLastImageCount(value);
-    }
   };
 
   return (
@@ -286,8 +296,7 @@ const AISettings = () => {
                   <div>블로그: {selectedBlogs.join(", ") || "-"}</div>
                   <div>쇼핑몰 URL: {shopUrl || "-"}</div>
                   <div>
-                    이미지 포함:{" "}
-                    {includeImage ? `예 (${imageCount}개)` : "아니오"}
+                    이미지 포함: {includeImage ? `Y (${imageCount}개)` : "N"}
                   </div>
                   <div>글자수 제한: {wordCount}자</div>
                   <div>매일 생성 시간: {generationTime}</div>
@@ -327,9 +336,8 @@ const AISettings = () => {
             </DialogHeader>
             <form
               onSubmit={async (e) => {
-                await handleSave(e);
-                // 생성 성공 시 모달 닫기 (수정은 안내 토스트만)
-                if (!hasTemplate) {
+                const ok = await handleSave(e);
+                if (ok && !hasTemplate) {
                   setOpen(false);
                 }
               }}
