@@ -120,7 +120,16 @@ const Profile = () => {
   }, [profile, form]);
 
   const onSubmit = (data: ProfileFormData) => {
-    updateProfile.mutate(data);
+    updateProfile.mutate(data, {
+      onSuccess: () => {
+        // 프로필 수정 성공 후 최신 데이터로 새로고침
+        refetch();
+        // localStorage의 userName 업데이트 (Topbar 동기화)
+        try {
+          localStorage.setItem("userName", data.username);
+        } catch {}
+      },
+    });
   };
 
   if (isLoading) {
