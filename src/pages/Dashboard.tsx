@@ -1,4 +1,11 @@
-import { FileText, Coins, Users } from "lucide-react";
+import {
+  FileText,
+  Coins,
+  Users,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+} from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -21,6 +28,42 @@ import {
 } from "@/components/ui/card";
 import { useDashboardQuery } from "@/lib/queries";
 import { formatDate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+
+// 커스텀 Tooltip 컴포넌트
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (!active || !payload || !payload.length) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-lg border bg-card p-3 shadow-lg">
+      {label && (
+        <p className="mb-2 text-sm font-semibold text-foreground">{label}</p>
+      )}
+      <div className="space-y-1.5">
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div
+                className="h-2.5 w-2.5 rounded-sm"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-xs text-muted-foreground">
+                {entry.name || entry.dataKey}
+              </span>
+            </div>
+            <span className="text-sm font-semibold text-foreground">
+              {typeof entry.value === "number"
+                ? entry.value.toLocaleString()
+                : entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const COLORS = [
   "#8b5cf6",
@@ -32,6 +75,44 @@ const COLORS = [
   "#14b8a6",
   "#f97316",
 ];
+
+// 증감값 색상 결정 함수
+const getComparisonColor = (value: number): string => {
+  if (value > 0) return "text-green-600";
+  if (value < 0) return "text-red-600";
+  return "text-muted-foreground"; // 0일 때 회색
+};
+
+// 증감값 표시 컴포넌트
+const ComparisonBadge = ({
+  change,
+  changeRate,
+}: {
+  change: number;
+  changeRate: number;
+}) => {
+  const colorClass = getComparisonColor(change);
+  const sign = change > 0 ? "+" : "";
+
+  let Icon;
+  if (change > 0) {
+    Icon = ArrowUp;
+  } else if (change < 0) {
+    Icon = ArrowDown;
+  } else {
+    Icon = Minus;
+  }
+
+  return (
+    <div className={`flex items-center gap-1 ${colorClass} mb-1`}>
+      <Icon className="w-3 h-3" />
+      <span className="text-xs font-medium">
+        {Math.abs(change)}, {sign}
+        {changeRate.toFixed(1)}%
+      </span>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   // Dashboard API 데이터 조회
@@ -47,6 +128,9 @@ const Dashboard = () => {
   const activeUserCount = dashboardData?.activeUserCount ?? 0;
   const totalBlogCount = dashboardData?.totalBlogCount ?? 0;
   const totalTokens = dashboardData?.totalTokenUsage ?? 0;
+
+  // 비교 데이터
+  const comparison = dashboardData?.comparison;
 
   // 오늘 작성된 글 목록
   const todayBlogList = dashboardData?.todayBlogItemList ?? [];
@@ -123,7 +207,10 @@ const Dashboard = () => {
 
         {/* Stats Cards */}
         <div className="grid gap-6 md:grid-cols-4">
-          <Card className="shadow-card">
+          <Card
+            className="shadow-card animate-fade-in-up opacity-0"
+            style={{ animationDelay: "0.1s" }}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 오늘 작성된 글
@@ -131,8 +218,16 @@ const Dashboard = () => {
               <FileText className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {isLoading ? "-" : todayPostCount}
+              <div className="flex items-baseline gap-4">
+                <div className="text-3xl font-bold text-foreground">
+                  {isLoading ? "-" : todayPostCount}
+                </div>
+                {!isLoading && comparison && (
+                  <ComparisonBadge
+                    change={comparison.todayBlogCountChange}
+                    changeRate={comparison.todayBlogCountChangeRate}
+                  />
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 오늘 생성된 글 수
@@ -140,7 +235,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-card">
+          <Card
+            className="shadow-card animate-fade-in-up opacity-0"
+            style={{ animationDelay: "0.2s" }}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 활성 사용자
@@ -148,8 +246,16 @@ const Dashboard = () => {
               <Users className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {isLoading ? "-" : activeUserCount}
+              <div className="flex items-baseline gap-4">
+                <div className="text-3xl font-bold text-foreground">
+                  {isLoading ? "-" : activeUserCount}
+                </div>
+                {!isLoading && comparison && (
+                  <ComparisonBadge
+                    change={comparison.activeUserCountChange}
+                    changeRate={comparison.activeUserCountChangeRate}
+                  />
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 현재 활성 사용자 수
@@ -157,7 +263,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-card">
+          <Card
+            className="shadow-card animate-fade-in-up opacity-0"
+            style={{ animationDelay: "0.3s" }}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 총 글 수
@@ -174,7 +283,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-card">
+          <Card
+            className="shadow-card animate-fade-in-up opacity-0"
+            style={{ animationDelay: "0.4s" }}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 사용한 토큰 수
@@ -182,8 +294,16 @@ const Dashboard = () => {
               <Coins className="w-4 h-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {isLoading ? "-" : totalTokens.toLocaleString()}
+              <div className="flex items-baseline gap-4">
+                <div className="text-3xl font-bold text-foreground">
+                  {isLoading ? "-" : totalTokens.toLocaleString()}
+                </div>
+                {!isLoading && comparison && (
+                  <ComparisonBadge
+                    change={comparison.totalTokenUsageChange}
+                    changeRate={comparison.totalTokenUsageChangeRate}
+                  />
+                )}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 오늘 총 사용량
@@ -195,7 +315,10 @@ const Dashboard = () => {
         {/* Charts Row */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Category Distribution Chart */}
-          <Card className="shadow-card">
+          <Card
+            className="shadow-card animate-fade-in-up opacity-0"
+            style={{ animationDelay: "0.5s" }}
+          >
             <CardHeader>
               <CardTitle>카테고리별 글 분포</CardTitle>
               <CardDescription>카테고리별 글 작성 분포</CardDescription>
@@ -231,13 +354,7 @@ const Dashboard = () => {
                         />
                       ))}
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "var(--radius)",
-                      }}
-                    />
+                    <Tooltip content={<CustomTooltip />} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -245,7 +362,10 @@ const Dashboard = () => {
           </Card>
 
           {/* Blog Platform Usage Chart */}
-          <Card className="shadow-card">
+          <Card
+            className="shadow-card animate-fade-in-up opacity-0"
+            style={{ animationDelay: "0.6s" }}
+          >
             <CardHeader>
               <CardTitle>블로그 플랫폼 사용 현황</CardTitle>
               <CardDescription>플랫폼별 글 작성 횟수</CardDescription>
@@ -274,13 +394,7 @@ const Dashboard = () => {
                       stroke="hsl(var(--muted-foreground))"
                       fontSize={12}
                     />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "var(--radius)",
-                      }}
-                    />
+                    <Tooltip content={<CustomTooltip />} />
                     <Bar
                       dataKey="count"
                       fill="hsl(var(--primary))"
@@ -294,7 +408,10 @@ const Dashboard = () => {
         </div>
 
         {/* Today's Articles */}
-        <Card className="shadow-card">
+        <Card
+          className="shadow-card animate-fade-in-up opacity-0"
+          style={{ animationDelay: "0.7s" }}
+        >
           <CardHeader>
             <CardTitle>오늘 작성된 글</CardTitle>
             <CardDescription>오늘 생성된 글 목록</CardDescription>
@@ -316,15 +433,28 @@ const Dashboard = () => {
                     className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <h3 className="font-medium text-foreground truncate">
                           {article.title}
                         </h3>
+                        {article.username && (
+                          <Badge
+                            variant="secondary"
+                            className="text-xs font-normal"
+                          >
+                            {article.username}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 mt-2 flex-wrap">
                         <Badge variant="outline" className="text-xs">
                           {article.platform}
                         </Badge>
+                        {article.category && (
+                          <Badge variant="outline" className="text-xs">
+                            {article.category}
+                          </Badge>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {formatDate(article.createdAt)}
                         </span>

@@ -122,8 +122,18 @@ export type DashboardResponse = {
   todayBlogItemList: Array<{
     title: string;
     platform: string;
+    category: string;
     createdAt: string;
+    username: string;
   }>;
+  comparison?: {
+    todayBlogCountChangeRate: number;
+    todayBlogCountChange: number;
+    activeUserCountChangeRate: number;
+    activeUserCountChange: number;
+    totalTokenUsageChangeRate: number;
+    totalTokenUsageChange: number;
+  };
 };
 
 // ==== FAQs ====
