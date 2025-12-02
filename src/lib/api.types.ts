@@ -95,9 +95,6 @@ export type BlogTemplateCreateRequest = {
   imageCount: number | null;
   charLimit: number;
   dailyPostTime: string; // "HH:MM:SS"
-  validImageCount: boolean;
-  validCharLimit: boolean;
-  validDailyPostTime: boolean;
 };
 
 // ===== Uploads =====

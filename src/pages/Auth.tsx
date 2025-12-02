@@ -133,7 +133,6 @@ const Auth = () => {
       });
       return;
     }
-    // 이메일 중복확인 비활성화: 체크 없이 진행
     if (password.length < 8) {
       toast({
         title: "비밀번호 규칙",
@@ -261,19 +260,7 @@ const Auth = () => {
                   }}
                   className="flex-1"
                 />
-                <Button
-                  type="button"
-                  onClick={() => {}}
-                  disabled
-                  title="준비중입니다"
-                  className="whitespace-nowrap bg-muted text-muted-foreground hover:bg-muted hover:text-muted-foreground cursor-not-allowed"
-                >
-                  중복확인 (준비중)
-                </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                이메일 중복확인 기능은 준비중입니다.
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="signup-department">부서</Label>
