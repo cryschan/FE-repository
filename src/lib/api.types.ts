@@ -145,3 +145,20 @@ export type FAQs = {
 };
 
 export type FAQsResponse = FAQs[];
+
+// ===== User Profile =====
+export type UserDetailResponse = {
+  userId: number;
+  email: string;
+  username: string;
+  department: string;
+  role: "ADMIN" | "USER";
+  tokenUsage: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpdateProfileRequest = {
+  username: string;
+  department: string;
+};
