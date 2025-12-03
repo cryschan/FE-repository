@@ -12,6 +12,8 @@ import Posts from "./pages/Posts";
 import Profile from "./pages/Profile";
 import Inquiry from "./pages/Inquiry";
 import AISettings from "./pages/AISettings";
+import Notices from "./pages/Notices";
+import NoticeDetail from "./pages/NoticeDetail";
 import { RequireAuth, PublicOnly, RequireAdmin } from "@/routes/guards";
 
 // QueryClient 설정 최적화
@@ -59,6 +61,8 @@ const App = () => (
             <Route path="/ai-settings" element={<AISettings />} />
             <Route path="/posts" element={<Posts />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/notices" element={<Notices />} />
+            <Route path="/notices/:id" element={<NoticeDetail />} />
             <Route path="/profile" element={<Profile />} />
             <Route
               path="/dashboard"
