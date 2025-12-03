@@ -139,12 +139,8 @@ const NoticeDetail = () => {
 
   return (
     <div className="bg-gradient-subtle">
-      <div className="w-full mx-auto p-8 space-y-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/notices")}
-          className="mb-2"
-        >
+      <div className="w-full mx-auto p-8 pt-4 pb-24 space-y-4">
+        <Button variant="ghost" onClick={() => navigate("/notices")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           목록으로
         </Button>

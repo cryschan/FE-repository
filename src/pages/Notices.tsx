@@ -130,7 +130,7 @@ const Notices = () => {
                 {notices.map((notice) => (
                   <div
                     key={notice.id}
-                    className="flex items-center justify-between p-6 hover:bg-muted/50 transition-colors cursor-pointer group"
+                    className="flex items-center justify-between px-4 py-6 hover:bg-muted/50 transition-colors cursor-pointer group"
                     onClick={() => navigate(`/notices/${notice.id}`)}
                   >
                     <div className="flex items-center gap-3 flex-1 pl-2">
