@@ -13,6 +13,7 @@ import {
   BarChart,
   ResponsiveContainer,
   Tooltip,
+  TooltipProps,
   XAxis,
   YAxis,
   Pie,
@@ -33,7 +34,11 @@ import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 // 커스텀 Tooltip 컴포넌트
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string>) => {
   if (!active || !payload || !payload.length) {
     return null;
   }
@@ -44,7 +49,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="mb-2 text-sm font-semibold text-foreground">{label}</p>
       )}
       <div className="space-y-1.5">
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index: number) => (
           <div key={index} className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <div
@@ -109,7 +114,8 @@ const ComparisonBadge = ({
     <div className={`flex items-center gap-1 ${colorClass} mb-1`}>
       <Icon className="w-3 h-3" />
       <span className="text-xs font-medium">
-        {Math.abs(change)}, {sign}
+        {sign}
+        {change}, {sign}
         {changeRate.toFixed(1)}%
       </span>
     </div>
@@ -429,13 +435,13 @@ const Dashboard = () => {
               </div>
             ) : (
               <div className="space-y-4">
-                {todayBlogList.map((article) => {
+                {todayBlogList.map((article, index) => {
                   const isSuccess = article.publishStatus === "PUBLISHED";
                   const isFailed = article.publishStatus === "FAILED";
 
                   return (
                     <div
-                      key={`${article.title}-${article.createdAt}`}
+                      key={`${article.title}-${article.createdAt}-${index}`}
                       className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
