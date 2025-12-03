@@ -28,7 +28,6 @@ import {
   useUpdateNoticeMutation,
   useDeleteNoticeMutation,
 } from "@/lib/queries";
-import type { NoticeDetail } from "@/lib/api.types";
 
 // 날짜 포맷팅: "YYYY.MM.DD"
 const formatNoticeDate = (dateString: string): string => {

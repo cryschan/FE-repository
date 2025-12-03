@@ -55,10 +55,6 @@ const NoticeForm = ({
       content: content.trim(),
       isImportant,
     });
-    // 폼 초기화
-    setTitle("");
-    setContent("");
-    setIsImportant(false);
   };
 
   return (
