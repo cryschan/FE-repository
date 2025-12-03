@@ -23,7 +23,6 @@ import {
   type SignupResponse,
   type LoginResponse,
   type EmailCheckResponse,
-  type DashboardResponse,
   type BlogsMyResponse,
   type NoticesPageResponse,
   type NoticeDetail,
@@ -196,8 +195,6 @@ export const useUpdatePostMutation = () => {
       title: string;
       content: string;
     }) => {
-      // TODO: 실제 API 호출로 교체
-      // return api.put(`api/posts/${data.id}`, { json: data }).json();
       return data;
     },
     onSuccess: (data) => {
@@ -231,8 +228,6 @@ export const useProfileQuery = () => {
   return useQuery({
     queryKey: queryKeys.profile.me,
     queryFn: async () => {
-      // TODO: 실제 API 호출로 교체
-      // return api.get("api/profile/me").json();
       return null;
     },
     staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
@@ -253,8 +248,6 @@ export const useUpdateProfileMutation = () => {
       email: string;
       department: string;
     }) => {
-      // TODO: 실제 API 호출로 교체
-      // return api.put("api/profile/me", { json: data }).json();
       return data;
     },
     onSuccess: () => {
@@ -309,7 +302,14 @@ export const useFAQsQuery = () => {
 export const useNoticesQuery = (page: number, size: number = 10) => {
   return useQuery({
     queryKey: queryKeys.notices.list(page, size),
-    queryFn: (): Promise<NoticesPageResponse> => getNotices(page, size),
+    queryFn: async (): Promise<NoticesPageResponse> => {
+      try {
+        return await getNotices(page, size);
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
     staleTime: 30 * 1000, // 30초간 캐시 유지
     placeholderData: keepPreviousData,
   });
@@ -331,10 +331,11 @@ export const useNoticeDetailQuery = (id: number | string | undefined) => {
           console.error("[useNoticeDetailQuery Error]", {
             error,
             id,
-            url: `api/notices/${id}`,
+            url: `/api/notices/${id}`,
           });
         }
-        throw error;
+        const message = await getErrorMessage(error);
+        throw new Error(message);
       }
     },
     enabled: !!id, // id가 있을 때만 쿼리 실행

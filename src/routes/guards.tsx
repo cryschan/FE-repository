@@ -10,7 +10,7 @@ const isAuthenticated = (): boolean => {
 };
 
 // 역할 조회
-const getUserRole = (): string => {
+export const getUserRole = (): string => {
   try {
     return localStorage.getItem("userRole") || "";
   } catch {
