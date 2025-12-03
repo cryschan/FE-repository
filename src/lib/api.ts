@@ -19,6 +19,13 @@ import type {
   FAQsResponse,
   UserDetailResponse,
   UpdateProfileRequest,
+  NoticesPageResponse,
+  NoticeDetail,
+  NoticeCreateRequest,
+  NoticeCreateResponse,
+  NoticeUpdateRequest,
+  NoticeUpdateResponse,
+  NoticeDeleteResponse,
 } from "./api.types";
 // 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
 export type * from "./api.types";
@@ -84,14 +91,14 @@ export const api = ky.create({
 
 // ===== Blog Templates =====
 export const getMyBlogTemplate = async (): Promise<BlogTemplateResponse> => {
-  return api.get("api/blog-templates/me").json<BlogTemplateResponse>();
+  return api.get("/api/blog-templates/me").json<BlogTemplateResponse>();
 };
 
 export const createBlogTemplate = async (
   data: BlogTemplateCreateRequest
 ): Promise<BlogTemplateResponse> => {
   return api
-    .post("api/blog-templates", { json: data })
+    .post("/api/blog-templates", { json: data })
     .json<BlogTemplateResponse>();
 };
 
@@ -103,7 +110,7 @@ export const updateMyBlogTemplate = async (
   data: BlogTemplateCreateRequest
 ): Promise<BlogTemplateResponse> => {
   return api
-    .put("api/blog-templates/me", { json: data })
+    .put("/api/blog-templates/me", { json: data })
     .json<BlogTemplateResponse>();
 };
 
@@ -118,7 +125,7 @@ export type GenerateNowResponse = {
  */
 export const generateBlogNow = async (): Promise<GenerateNowResponse> => {
   return api
-    .post("api/blog-templates/generate-now")
+    .post("/api/blog-templates/generate-now")
     .json<GenerateNowResponse>();
 };
 
@@ -126,7 +133,7 @@ export const generateBlogNow = async (): Promise<GenerateNowResponse> => {
 export const createUpload = async (
   data: CreateUploadRequest
 ): Promise<CreateUploadResponse> => {
-  return api.post("api/uploads", { json: data }).json<CreateUploadResponse>();
+  return api.post("/api/uploads", { json: data }).json<CreateUploadResponse>();
 };
 
 // ===== Blogs =====
@@ -134,14 +141,14 @@ export const updateBlog = async (
   blogId: number | string,
   data: BlogUpdateRequest
 ): Promise<Blog> => {
-  return api.put(`api/blogs/${blogId}`, { json: data }).json<Blog>();
+  return api.put(`/api/blogs/${blogId}`, { json: data }).json<Blog>();
 };
 
 // ===== Auth =====
 export const refreshAccessToken = async (
   data: RefreshRequest
 ): Promise<RefreshResponse> => {
-  return api.post("api/auth/refresh", { json: data }).json<RefreshResponse>();
+  return api.post("/api/auth/refresh", { json: data }).json<RefreshResponse>();
 };
 
 /**
@@ -150,7 +157,7 @@ export const refreshAccessToken = async (
  * @returns 생성된 사용자 정보
  */
 export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
-  return api.post("api/auth/signup", { json: data }).json<SignupResponse>();
+  return api.post("/api/auth/signup", { json: data }).json<SignupResponse>();
 };
 
 /**
@@ -160,7 +167,7 @@ export const signup = async (data: SignupRequest): Promise<SignupResponse> => {
  */
 export const login = async (data: LoginRequest): Promise<LoginResponse> => {
   const response = await api
-    .post("api/auth/login", { json: data })
+    .post("/api/auth/login", { json: data })
     .json<LoginResponse>();
 
   // 토큰 저장
@@ -183,7 +190,7 @@ export const checkEmailAvailability = async (
   email: string
 ): Promise<EmailCheckResponse> => {
   return api
-    .get(`api/auth/check-email?email=${encodeURIComponent(email)}`)
+    .get(`/api/auth/check-email?email=${encodeURIComponent(email)}`)
     .json<EmailCheckResponse>();
 };
 
@@ -199,21 +206,74 @@ export const getMyBlogs = async (
   if (category && category.trim() && category !== "전체") {
     searchParams.category = category;
   }
-  return api.get("api/blogs/my", { searchParams }).json<BlogsMyResponse>();
+  return api.get("/api/blogs/my", { searchParams }).json<BlogsMyResponse>();
 };
 
 /**
  * 관리자 대시보드 요약 조회
  */
 export const getDashboard = async (): Promise<DashboardResponse> => {
-  return api.get("api/admin/dashboard").json<DashboardResponse>();
+  return api.get("/api/admin/dashboard").json<DashboardResponse>();
 };
 
 /**
  * FAQ 자주 묻는 질문 목록 조회
  */
 export const getFAQs = async (): Promise<FAQsResponse> => {
-  return api.get("api/faqs").json<FAQsResponse>();
+  return api.get("/api/faqs").json<FAQsResponse>();
+};
+
+/**
+ * 공지사항 목록 조회 (페이지네이션)
+ */
+export const getNotices = async (
+  page: number = 1,
+  size: number = 10
+): Promise<NoticesPageResponse> => {
+  return api
+    .get("/api/notices", {
+      searchParams: { page: String(page), size: String(size) },
+    })
+    .json<NoticesPageResponse>();
+};
+
+/**
+ * 공지사항 상세 조회
+ */
+export const getNoticeDetail = async (
+  id: number | string
+): Promise<NoticeDetail> => {
+  return api.get(`/api/notices/${id}`).json<NoticeDetail>();
+};
+
+/**
+ * 공지사항 수정
+ */
+export const updateNotice = async (
+  id: number | string,
+  data: NoticeUpdateRequest
+): Promise<NoticeUpdateResponse> => {
+  return api
+    .put(`/api/notices/${id}`, { json: data })
+    .json<NoticeUpdateResponse>();
+};
+
+/**
+ * 공지사항 삭제
+ */
+export const deleteNotice = async (
+  id: number | string
+): Promise<NoticeDeleteResponse> => {
+  return api.delete(`/api/notices/${id}`).json<NoticeDeleteResponse>();
+};
+
+/**
+ * 공지사항 생성
+ */
+export const createNotice = async (
+  data: NoticeCreateRequest
+): Promise<NoticeCreateResponse> => {
+  return api.post("/api/notices", { json: data }).json<NoticeCreateResponse>();
 };
 
 // ===== User Profile =====
@@ -223,7 +283,7 @@ export const getFAQs = async (): Promise<FAQsResponse> => {
  * @returns 사용자 상세 정보
  */
 export const getMyProfile = async (): Promise<UserDetailResponse> => {
-  return api.get("api/user-profile").json<UserDetailResponse>();
+  return api.get("/api/user-profile").json<UserDetailResponse>();
 };
 
 /**
@@ -234,7 +294,7 @@ export const getMyProfile = async (): Promise<UserDetailResponse> => {
 export const getUserProfile = async (
   userId: number
 ): Promise<UserDetailResponse> => {
-  return api.get(`api/user-profile/${userId}`).json<UserDetailResponse>();
+  return api.get(`/api/user-profile/${userId}`).json<UserDetailResponse>();
 };
 
 /**
@@ -246,7 +306,7 @@ export const updateProfile = async (
   data: UpdateProfileRequest
 ): Promise<UserDetailResponse> => {
   return api
-    .put("api/user-profile/update", { json: data })
+    .put("/api/user-profile/update", { json: data })
     .json<UserDetailResponse>();
 };
 
@@ -265,7 +325,7 @@ export const logout = async () => {
   // 서버에 로그아웃 알림 (refreshToken 무효화)
   try {
     if (refreshToken) {
-      await api.post("api/auth/logout", { json: { refreshToken } });
+      await api.post("/api/auth/logout", { json: { refreshToken } });
     }
   } catch {
     // 서버 로그아웃 실패는 무시하고 클라이언트 로그아웃 계속 진행

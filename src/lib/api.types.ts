@@ -162,3 +162,78 @@ export type UpdateProfileRequest = {
   username: string;
   department: string;
 };
+
+// ==== Notices ====
+export type Notice = {
+  id: number;
+  title: string;
+  createdAt: string;
+  isNew: boolean;
+  isImportant: boolean;
+};
+
+export type NoticeDetail = {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  isNew: boolean;
+  isImportant: boolean;
+  canEdit: boolean;
+};
+
+export type NoticeCreateRequest = {
+  title: string;
+  content: string;
+  isImportant: boolean;
+};
+
+export type NoticeCreateResponse = {
+  id: number;
+};
+
+export type NoticeUpdateRequest = {
+  title: string;
+  content: string;
+  isImportant: boolean;
+};
+
+export type NoticeUpdateResponse = {
+  id: number;
+  message: string;
+};
+
+export type NoticeDeleteResponse = {
+  id: number;
+  message: string;
+};
+
+export type NoticesPageResponse = {
+  content: Notice[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      empty: boolean;
+      sorted: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  sort: {
+    empty: boolean;
+    sorted: boolean;
+    unsorted: boolean;
+  };
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+};

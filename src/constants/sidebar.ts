@@ -27,7 +27,10 @@ export const SECTIONS: SidebarSection[] = [
   {
     label: "고객 지원",
     icon: HelpCircle,
-    items: [{ title: "QnA (자주 묻는 질문 / 내 문의)", to: "/support" }],
+    items: [
+      { title: "QnA (자주 묻는 질문 / 내 문의)", to: "/support" },
+      { title: "공지사항", to: "/notices" },
+    ],
   },
   {
     label: "마이페이지",
