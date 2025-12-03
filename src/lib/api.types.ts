@@ -119,8 +119,20 @@ export type DashboardResponse = {
   todayBlogItemList: Array<{
     title: string;
     platform: string;
+    category: string;
     createdAt: string;
+    username: string;
+    publishStatus: string;
+    failureReason?: string;
   }>;
+  comparison?: {
+    todayBlogCountChangeRate: number;
+    todayBlogCountChange: number;
+    activeUserCountChangeRate: number;
+    activeUserCountChange: number;
+    totalTokenUsageChangeRate: number;
+    totalTokenUsageChange: number;
+  };
 };
 
 // ==== FAQs ====
@@ -133,6 +145,23 @@ export type FAQs = {
 };
 
 export type FAQsResponse = FAQs[];
+
+// ===== User Profile =====
+export type UserDetailResponse = {
+  userId: number;
+  email: string;
+  username: string;
+  department: string;
+  role: "ADMIN" | "USER";
+  tokenUsage: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpdateProfileRequest = {
+  username: string;
+  department: string;
+};
 
 // ==== Notices ====
 export type Notice = {

@@ -17,6 +17,8 @@ import type {
   RefreshRequest,
   RefreshResponse,
   FAQsResponse,
+  UserDetailResponse,
+  UpdateProfileRequest,
   NoticesPageResponse,
   NoticeDetail,
   NoticeCreateRequest,
@@ -272,6 +274,40 @@ export const createNotice = async (
   data: NoticeCreateRequest
 ): Promise<NoticeCreateResponse> => {
   return api.post("/api/notices", { json: data }).json<NoticeCreateResponse>();
+};
+
+// ===== User Profile =====
+
+/**
+ * 내 프로필 조회 API
+ * @returns 사용자 상세 정보
+ */
+export const getMyProfile = async (): Promise<UserDetailResponse> => {
+  return api.get("/api/user-profile").json<UserDetailResponse>();
+};
+
+/**
+ * 다른 사용자 프로필 조회 API
+ * @param userId 조회할 사용자 ID
+ * @returns 사용자 상세 정보
+ */
+export const getUserProfile = async (
+  userId: number
+): Promise<UserDetailResponse> => {
+  return api.get(`/api/user-profile/${userId}`).json<UserDetailResponse>();
+};
+
+/**
+ * 프로필 수정 API
+ * @param data 수정할 프로필 정보
+ * @returns 수정된 사용자 정보
+ */
+export const updateProfile = async (
+  data: UpdateProfileRequest
+): Promise<UserDetailResponse> => {
+  return api
+    .put("/api/user-profile/update", { json: data })
+    .json<UserDetailResponse>();
 };
 
 /**
