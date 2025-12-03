@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronRight } from "lucide-react";
+import { Plus, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,76 +12,68 @@ import {
 } from "@/components/ui/dialog";
 import NoticeForm from "@/components/NoticeForm";
 import { useToast } from "@/hooks/use-toast";
+import { useNoticesQuery } from "@/lib/queries";
+import type { Notice } from "@/lib/api.types";
 
-interface Notice {
-  id: number;
-  title: string;
-  date: string;
-  isNew?: boolean;
-  isImportant?: boolean;
-}
+// 권한 확인 함수
+const getUserRole = (): string => {
+  try {
+    return localStorage.getItem("userRole") || "";
+  } catch {
+    return "";
+  }
+};
+
+// 날짜 포맷팅: "YYYY.MM.DD"
+const formatNoticeDate = (dateString: string): string => {
+  try {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}.${month}.${day}`;
+  } catch {
+    return dateString;
+  }
+};
 
 const Notices = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [notices, setNotices] = useState<Notice[]>([
-    {
-      id: 1,
-      title: "서비스 정기 점검 안내 (12월 25일)",
-      date: "2024.12.20",
-      isNew: true,
-      isImportant: true,
-    },
-    {
-      id: 2,
-      title: "새로운 AI 기능 업데이트 안내",
-      date: "2024.12.18",
-      isNew: true,
-    },
-    {
-      id: 3,
-      title: "블로그 에디터 개선 사항 공지",
-      date: "2024.12.15",
-    },
-    {
-      id: 4,
-      title: "개인정보 처리방침 변경 안내",
-      date: "2024.12.10",
-    },
-    {
-      id: 5,
-      title: "크리스마스 이벤트 안내",
-      date: "2024.12.05",
-    },
-    {
-      id: 6,
-      title: "서비스 이용약관 업데이트",
-      date: "2024.12.01",
-    },
-    {
-      id: 7,
-      title: "11월 서비스 업데이트 내역",
-      date: "2024.11.25",
-    },
-  ]);
-
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [startPage, setStartPage] = useState(1);
+  const pageSize = 10;
+  const pagesPerGroup = 5;
+
+  // 관리자 권한 확인
+  const isAdmin = getUserRole() === "ADMIN";
+
+  // API 연동
+  const {
+    data: noticesData,
+    isLoading,
+    isError,
+    error,
+  } = useNoticesQuery(currentPage, pageSize);
+
+  const notices = noticesData?.content ?? [];
+  const totalPages = noticesData?.totalPages ?? 1;
+
+  // 페이지 변경 시 startPage 조정
+  useEffect(() => {
+    const groupStart =
+      Math.floor((currentPage - 1) / pagesPerGroup) * pagesPerGroup + 1;
+    setStartPage(groupStart);
+  }, [currentPage, pagesPerGroup]);
 
   const handleCreate = (data: {
     title: string;
     content: string;
     isImportant: boolean;
   }) => {
-    const newNotice: Notice = {
-      id: notices.length + 1,
-      title: data.title,
-      date: new Date().toISOString().split("T")[0].replace(/-/g, "."),
-      isNew: true,
-      isImportant: data.isImportant,
-    };
-
-    setNotices([newNotice, ...notices]);
+    // TODO: API 연동 필요
     setIsCreateOpen(false);
     toast({
       title: "공지사항이 작성되었습니다",
@@ -100,71 +92,117 @@ const Notices = () => {
               서비스 관련 주요 소식을 확인하세요
             </p>
           </div>
-          <Button
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            공지 작성
-          </Button>
+          {isAdmin && (
+            <Button
+              className="bg-primary hover:bg-primary/90"
+              onClick={() => setIsCreateOpen(true)}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              공지 작성
+            </Button>
+          )}
         </div>
 
         {/* Notices List */}
         <Card className="shadow-card">
           <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {notices.map((notice) => (
-                <div
-                  key={notice.id}
-                  className="flex items-center justify-between p-6 hover:bg-muted/50 transition-colors cursor-pointer group"
-                  onClick={() => navigate(`/notices/${notice.id}`)}
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <span className="text-sm text-muted-foreground w-8">
-                      {notice.id}
-                    </span>
-                    <div className="flex items-center gap-3 flex-1">
-                      <h3 className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
-                        {notice.title}
-                      </h3>
-                      <div className="flex gap-2">
-                        {notice.isNew && (
-                          <Badge variant="default" className="bg-primary">
-                            NEW
-                          </Badge>
-                        )}
-                        {notice.isImportant && (
-                          <Badge variant="destructive">중요</Badge>
-                        )}
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                로딩 중...
+              </div>
+            ) : isError ? (
+              <div className="text-center py-8 text-destructive">
+                공지사항을 불러오는 중 오류가 발생했습니다.
+                {error instanceof Error && (
+                  <p className="text-sm mt-2">{error.message}</p>
+                )}
+              </div>
+            ) : notices.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                공지사항이 없습니다.
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {notices.map((notice) => (
+                  <div
+                    key={notice.id}
+                    className="flex items-center justify-between p-6 hover:bg-muted/50 transition-colors cursor-pointer group"
+                    onClick={() => navigate(`/notices/${notice.id}`)}
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <span className="text-sm text-muted-foreground w-8">
+                        {notice.id}
+                      </span>
+                      <div className="flex items-center gap-3 flex-1">
+                        <h3 className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
+                          {notice.title}
+                        </h3>
+                        <div className="flex gap-2">
+                          {notice.isNew && (
+                            <Badge variant="default" className="bg-primary">
+                              NEW
+                            </Badge>
+                          )}
+                          {notice.isImportant && (
+                            <Badge variant="destructive">중요</Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex items-center gap-6">
+                      <span className="text-sm text-muted-foreground">
+                        {formatNoticeDate(notice.createdAt)}
+                      </span>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <span className="text-sm text-muted-foreground">
-                      {notice.date}
-                    </span>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Pagination */}
-        <div className="flex justify-center pt-4">
+        <div className="flex items-center justify-center gap-4 pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setStartPage((prev) => Math.max(1, prev - pagesPerGroup))
+            }
+            disabled={startPage === 1}
+            className="h-8 w-8 p-0 hover:bg-muted disabled:opacity-50"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
           <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((page) => (
-              <Button
-                key={page}
-                variant={page === 1 ? "default" : "outline"}
-                size="sm"
-                className={page === 1 ? "bg-primary" : ""}
-              >
-                {page}
-              </Button>
-            ))}
+            {Array.from({ length: pagesPerGroup }, (_, i) => startPage + i)
+              .filter((page) => page <= totalPages)
+              .map((page) => (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className={page === currentPage ? "bg-primary" : ""}
+                >
+                  {page}
+                </Button>
+              ))}
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setStartPage((prev) =>
+                Math.min(totalPages - pagesPerGroup + 1, prev + pagesPerGroup)
+              )
+            }
+            disabled={startPage + pagesPerGroup > totalPages}
+            className="h-8 w-8 p-0 hover:bg-muted disabled:opacity-50"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 

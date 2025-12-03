@@ -17,6 +17,8 @@ import type {
   RefreshRequest,
   RefreshResponse,
   FAQsResponse,
+  NoticesPageResponse,
+  NoticeDetail,
 } from "./api.types";
 // 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
 export type * from "./api.types";
@@ -212,6 +214,29 @@ export const getDashboard = async (): Promise<DashboardResponse> => {
  */
 export const getFAQs = async (): Promise<FAQsResponse> => {
   return api.get("api/faqs").json<FAQsResponse>();
+};
+
+/**
+ * 공지사항 목록 조회 (페이지네이션)
+ */
+export const getNotices = async (
+  page: number = 1,
+  size: number = 10
+): Promise<NoticesPageResponse> => {
+  return api
+    .get("api/notices", {
+      searchParams: { page: String(page), size: String(size) },
+    })
+    .json<NoticesPageResponse>();
+};
+
+/**
+ * 공지사항 상세 조회
+ */
+export const getNoticeDetail = async (
+  id: number | string
+): Promise<NoticeDetail> => {
+  return api.get(`/api/notices/${id}`).json<NoticeDetail>();
 };
 
 /**

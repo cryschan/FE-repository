@@ -13,6 +13,8 @@ import {
   getErrorMessage,
   getMyBlogs,
   getFAQs,
+  getNotices,
+  getNoticeDetail,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
@@ -20,6 +22,8 @@ import {
   type EmailCheckResponse,
   type DashboardResponse,
   type BlogsMyResponse,
+  type NoticesPageResponse,
+  type NoticeDetail,
 } from "./api";
 
 // ===== Query Keys =====
@@ -45,6 +49,11 @@ export const queryKeys = {
   },
   faqs: {
     all: ["faqs", "all"] as const,
+  },
+  notices: {
+    list: (page: number, size: number) =>
+      ["notices", "list", page, size] as const,
+    detail: (id: number | string) => ["notices", "detail", id] as const,
   },
 } as const;
 
@@ -283,5 +292,44 @@ export const useFAQsQuery = () => {
     queryKey: queryKeys.faqs.all,
     queryFn: () => getFAQs(),
     staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+  });
+};
+
+/**
+ * 공지사항 목록 조회 Query (페이지네이션)
+ */
+export const useNoticesQuery = (page: number, size: number = 10) => {
+  return useQuery({
+    queryKey: queryKeys.notices.list(page, size),
+    queryFn: (): Promise<NoticesPageResponse> => getNotices(page, size),
+    staleTime: 30 * 1000, // 30초간 캐시 유지
+    placeholderData: keepPreviousData,
+  });
+};
+
+/**
+ * 공지사항 상세 조회 Query
+ */
+export const useNoticeDetailQuery = (id: number | string | undefined) => {
+  return useQuery({
+    queryKey: queryKeys.notices.detail(id ?? ""),
+    queryFn: async (): Promise<NoticeDetail> => {
+      if (!id) throw new Error("Notice ID is required");
+      try {
+        return await getNoticeDetail(id);
+      } catch (error) {
+        // 개발 환경에서 에러 로깅
+        if (import.meta.env.DEV) {
+          console.error("[useNoticeDetailQuery Error]", {
+            error,
+            id,
+            url: `api/notices/${id}`,
+          });
+        }
+        throw error;
+      }
+    },
+    enabled: !!id, // id가 있을 때만 쿼리 실행
+    staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
   });
 };

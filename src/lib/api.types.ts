@@ -133,3 +133,52 @@ export type FAQs = {
 };
 
 export type FAQsResponse = FAQs[];
+
+// ==== Notices ====
+export type Notice = {
+  id: number;
+  title: string;
+  createdAt: string;
+  isNew: boolean;
+  isImportant: boolean;
+};
+
+export type NoticeDetail = {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  isNew: boolean;
+  isImportant: boolean;
+  canEdit: boolean;
+};
+
+export type NoticesPageResponse = {
+  content: Notice[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      empty: boolean;
+      sorted: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+  sort: {
+    empty: boolean;
+    sorted: boolean;
+    unsorted: boolean;
+  };
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+};
