@@ -120,16 +120,22 @@ const Profile = () => {
   }, [profile, form]);
 
   const onSubmit = (data: ProfileFormData) => {
-    updateProfile.mutate(data, {
-      onSuccess: () => {
-        // 프로필 수정 성공 후 최신 데이터로 새로고침
-        refetch();
-        // localStorage의 userName 업데이트 (Topbar 동기화)
-        try {
-          localStorage.setItem("userName", data.username);
-        } catch {}
+    updateProfile.mutate(
+      {
+        username: data.username,
+        department: data.department,
       },
-    });
+      {
+        onSuccess: () => {
+          // 프로필 수정 성공 후 최신 데이터로 새로고침
+          refetch();
+          // localStorage의 userName 업데이트 (Topbar 동기화)
+          try {
+            localStorage.setItem("userName", data.username);
+          } catch {}
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -149,13 +155,14 @@ const Profile = () => {
         <Card className="shadow-elevated">
           <CardHeader>
             <CardTitle>프로필 정보</CardTitle>
-            <CardDescription>
-              이름과 부서 정보를 관리하세요
-            </CardDescription>
+            <CardDescription>이름과 부서 정보를 관리하세요</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
+              >
                 <FormField
                   control={form.control}
                   name="username"
@@ -216,7 +223,9 @@ const Profile = () => {
                 <div className="flex justify-end pt-4">
                   <Button
                     type="submit"
-                    disabled={updateProfile.isPending || !form.formState.isDirty}
+                    disabled={
+                      updateProfile.isPending || !form.formState.isDirty
+                    }
                     className="bg-sidebar text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   >
                     {updateProfile.isPending ? (

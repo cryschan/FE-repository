@@ -92,15 +92,15 @@ export const useLoginMutation = () => {
   return useMutation({
     mutationFn: (data: LoginRequest) => login(data),
     onSuccess: (data: LoginResponse) => {
-      // 사용자 정보를 캐시에 저장 (응답 스키마에 맞춰 정규화)
-      const user = {
+      // 프로필 캐시를 로그인 응답으로 먼저 프라임하여 초기 표시를 개선
+      const seededProfile = {
         userId: data.userId,
         email: data.email,
         username: data.username,
-        createdAt: data.createdAt,
         role: data.role,
+        createdAt: data.createdAt,
       };
-      queryClient.setQueryData(queryKeys.auth.user, user);
+      queryClient.setQueryData(queryKeys.profile.me, seededProfile);
       // 로컬 스토리지에 역할 저장 (사이드바 표시/가드에 사용)
       try {
         localStorage.setItem("userRole", data.role || "");
