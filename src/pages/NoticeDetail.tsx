@@ -23,7 +23,11 @@ import {
 } from "@/components/ui/dialog";
 import NoticeForm from "@/components/NoticeForm";
 import { useToast } from "@/hooks/use-toast";
-import { useNoticeDetailQuery } from "@/lib/queries";
+import {
+  useNoticeDetailQuery,
+  useUpdateNoticeMutation,
+  useDeleteNoticeMutation,
+} from "@/lib/queries";
 import type { NoticeDetail } from "@/lib/api.types";
 
 // 날짜 포맷팅: "YYYY.MM.DD"
@@ -47,14 +51,21 @@ const NoticeDetail = () => {
   // API 연동
   const { data: notice, isLoading, isError, error } = useNoticeDetailQuery(id);
 
+  // 공지사항 수정 Mutation
+  const updateNoticeMutation = useUpdateNoticeMutation();
+
+  // 공지사항 삭제 Mutation
+  const deleteNoticeMutation = useDeleteNoticeMutation();
+
   const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleDelete = () => {
-    toast({
-      title: "공지사항이 삭제되었습니다",
-      variant: "success",
+    if (!id) return;
+    deleteNoticeMutation.mutate(id, {
+      onSuccess: () => {
+        navigate("/notices");
+      },
     });
-    navigate("/notices");
   };
 
   const handleEdit = (data: {
@@ -62,12 +73,18 @@ const NoticeDetail = () => {
     content: string;
     isImportant: boolean;
   }) => {
-    // TODO: API 연동 필요
-    setIsEditOpen(false);
-    toast({
-      title: "공지사항이 수정되었습니다",
-      variant: "success",
-    });
+    if (!id) return;
+    updateNoticeMutation.mutate(
+      {
+        id,
+        data,
+      },
+      {
+        onSuccess: () => {
+          setIsEditOpen(false);
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -204,16 +221,19 @@ const NoticeDetail = () => {
           <DialogHeader>
             <DialogTitle>공지사항 수정</DialogTitle>
           </DialogHeader>
-          <NoticeForm
-            initialData={{
-              title: notice.title,
-              content: notice.content,
-              isImportant: notice.isImportant,
-            }}
-            onSubmit={handleEdit}
-            onCancel={() => setIsEditOpen(false)}
-            submitLabel="수정"
-          />
+          {notice && (
+            <NoticeForm
+              key={notice.id}
+              initialData={{
+                title: notice.title,
+                content: notice.content,
+                isImportant: notice.isImportant,
+              }}
+              onSubmit={handleEdit}
+              onCancel={() => setIsEditOpen(false)}
+              submitLabel="수정"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -19,6 +19,11 @@ import type {
   FAQsResponse,
   NoticesPageResponse,
   NoticeDetail,
+  NoticeCreateRequest,
+  NoticeCreateResponse,
+  NoticeUpdateRequest,
+  NoticeUpdateResponse,
+  NoticeDeleteResponse,
 } from "./api.types";
 // 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
 export type * from "./api.types";
@@ -237,6 +242,36 @@ export const getNoticeDetail = async (
   id: number | string
 ): Promise<NoticeDetail> => {
   return api.get(`/api/notices/${id}`).json<NoticeDetail>();
+};
+
+/**
+ * 공지사항 수정
+ */
+export const updateNotice = async (
+  id: number | string,
+  data: NoticeUpdateRequest
+): Promise<NoticeUpdateResponse> => {
+  return api
+    .put(`/api/notices/${id}`, { json: data })
+    .json<NoticeUpdateResponse>();
+};
+
+/**
+ * 공지사항 삭제
+ */
+export const deleteNotice = async (
+  id: number | string
+): Promise<NoticeDeleteResponse> => {
+  return api.delete(`/api/notices/${id}`).json<NoticeDeleteResponse>();
+};
+
+/**
+ * 공지사항 생성
+ */
+export const createNotice = async (
+  data: NoticeCreateRequest
+): Promise<NoticeCreateResponse> => {
+  return api.post("/api/notices", { json: data }).json<NoticeCreateResponse>();
 };
 
 /**

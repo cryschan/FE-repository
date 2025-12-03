@@ -37,6 +37,11 @@ const NoticeForm = ({
       setTitle(initialData.title);
       setContent(initialData.content);
       setIsImportant(initialData.isImportant);
+    } else {
+      // initialData가 없으면 폼 초기화
+      setTitle("");
+      setContent("");
+      setIsImportant(false);
     }
   }, [initialData]);
 

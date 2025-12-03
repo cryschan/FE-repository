@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import NoticeForm from "@/components/NoticeForm";
 import { useToast } from "@/hooks/use-toast";
-import { useNoticesQuery } from "@/lib/queries";
+import { useNoticesQuery, useCreateNoticeMutation } from "@/lib/queries";
 import type { Notice } from "@/lib/api.types";
 
 // 권한 확인 함수
@@ -61,6 +61,9 @@ const Notices = () => {
   const notices = noticesData?.content ?? [];
   const totalPages = noticesData?.totalPages ?? 1;
 
+  // 공지사항 생성 Mutation
+  const createNoticeMutation = useCreateNoticeMutation();
+
   // 페이지 변경 시 startPage 조정
   useEffect(() => {
     const groupStart =
@@ -73,11 +76,12 @@ const Notices = () => {
     content: string;
     isImportant: boolean;
   }) => {
-    // TODO: API 연동 필요
-    setIsCreateOpen(false);
-    toast({
-      title: "공지사항이 작성되었습니다",
-      variant: "success",
+    createNoticeMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCreateOpen(false);
+        // 첫 페이지로 이동하여 새로 생성된 공지사항 확인
+        setCurrentPage(1);
+      },
     });
   };
 
@@ -129,24 +133,19 @@ const Notices = () => {
                     className="flex items-center justify-between p-6 hover:bg-muted/50 transition-colors cursor-pointer group"
                     onClick={() => navigate(`/notices/${notice.id}`)}
                   >
-                    <div className="flex items-center gap-4 flex-1">
-                      <span className="text-sm text-muted-foreground w-8">
-                        {notice.id}
-                      </span>
-                      <div className="flex items-center gap-3 flex-1">
-                        <h3 className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
-                          {notice.title}
-                        </h3>
-                        <div className="flex gap-2">
-                          {notice.isNew && (
-                            <Badge variant="default" className="bg-primary">
-                              NEW
-                            </Badge>
-                          )}
-                          {notice.isImportant && (
-                            <Badge variant="destructive">중요</Badge>
-                          )}
-                        </div>
+                    <div className="flex items-center gap-3 flex-1 pl-2">
+                      <h3 className="text-base font-medium text-foreground group-hover:text-primary transition-colors">
+                        {notice.title}
+                      </h3>
+                      <div className="flex gap-2">
+                        {notice.isNew && (
+                          <Badge variant="default" className="bg-primary">
+                            NEW
+                          </Badge>
+                        )}
+                        {notice.isImportant && (
+                          <Badge variant="destructive">중요</Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-6">

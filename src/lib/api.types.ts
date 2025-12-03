@@ -154,6 +154,32 @@ export type NoticeDetail = {
   canEdit: boolean;
 };
 
+export type NoticeCreateRequest = {
+  title: string;
+  content: string;
+  isImportant: boolean;
+};
+
+export type NoticeCreateResponse = {
+  id: number;
+};
+
+export type NoticeUpdateRequest = {
+  title: string;
+  content: string;
+  isImportant: boolean;
+};
+
+export type NoticeUpdateResponse = {
+  id: number;
+  message: string;
+};
+
+export type NoticeDeleteResponse = {
+  id: number;
+  message: string;
+};
+
 export type NoticesPageResponse = {
   content: Notice[];
   pageable: {

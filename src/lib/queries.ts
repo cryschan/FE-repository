@@ -15,6 +15,9 @@ import {
   getFAQs,
   getNotices,
   getNoticeDetail,
+  createNotice,
+  updateNotice,
+  deleteNotice,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
@@ -24,6 +27,11 @@ import {
   type BlogsMyResponse,
   type NoticesPageResponse,
   type NoticeDetail,
+  type NoticeCreateRequest,
+  type NoticeCreateResponse,
+  type NoticeUpdateRequest,
+  type NoticeUpdateResponse,
+  type NoticeDeleteResponse,
 } from "./api";
 
 // ===== Query Keys =====
@@ -331,5 +339,113 @@ export const useNoticeDetailQuery = (id: number | string | undefined) => {
     },
     enabled: !!id, // id가 있을 때만 쿼리 실행
     staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
+  });
+};
+
+/**
+ * 공지사항 생성 Mutation
+ */
+export const useCreateNoticeMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: NoticeCreateRequest) => createNotice(data),
+    onSuccess: (data: NoticeCreateResponse) => {
+      // 공지사항 목록 캐시 무효화하여 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "list"],
+      });
+      toast({
+        title: "공지사항이 작성되었습니다",
+        description: "공지사항이 성공적으로 생성되었습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const errorMessage = await getErrorMessage(error);
+      toast({
+        title: "공지사항 작성 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * 공지사항 수정 Mutation
+ */
+export const useUpdateNoticeMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number | string;
+      data: NoticeUpdateRequest;
+    }) => updateNotice(id, data),
+    onSuccess: (response: NoticeUpdateResponse, variables) => {
+      // 공지사항 상세 및 목록 캐시 무효화
+      // id를 문자열과 숫자 모두 무효화
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "detail"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "list"],
+      });
+      toast({
+        title: "공지사항이 수정되었습니다",
+        description:
+          response.message || "공지사항이 성공적으로 수정되었습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const errorMessage = await getErrorMessage(error);
+      toast({
+        title: "공지사항 수정 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * 공지사항 삭제 Mutation
+ */
+export const useDeleteNoticeMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number | string) => deleteNotice(id),
+    onSuccess: (response: NoticeDeleteResponse) => {
+      // 공지사항 상세 및 목록 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "detail"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "list"],
+      });
+      toast({
+        title: "공지사항이 삭제되었습니다",
+        description:
+          response.message || "공지사항이 성공적으로 삭제되었습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const errorMessage = await getErrorMessage(error);
+      toast({
+        title: "공지사항 삭제 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
   });
 };
