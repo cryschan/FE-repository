@@ -13,6 +13,9 @@ import {
   getErrorMessage,
   getMyBlogs,
   getFAQs,
+  getMyProfile,
+  getUserProfile,
+  updateProfile,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
@@ -20,6 +23,8 @@ import {
   type EmailCheckResponse,
   type DashboardResponse,
   type BlogsMyResponse,
+  type UserDetailResponse,
+  type UpdateProfileRequest,
 } from "./api";
 
 // ===== Query Keys =====
@@ -38,6 +43,7 @@ export const queryKeys = {
   },
   profile: {
     me: ["profile", "me"] as const,
+    user: (userId: number) => ["profile", "user", userId] as const,
   },
   admin: {
     inquiries: ["admin", "inquiries"] as const,
@@ -86,15 +92,15 @@ export const useLoginMutation = () => {
   return useMutation({
     mutationFn: (data: LoginRequest) => login(data),
     onSuccess: (data: LoginResponse) => {
-      // 사용자 정보를 캐시에 저장 (응답 스키마에 맞춰 정규화)
-      const user = {
+      // 프로필 캐시를 로그인 응답으로 먼저 프라임하여 초기 표시를 개선
+      const seededProfile = {
         userId: data.userId,
         email: data.email,
         username: data.username,
-        createdAt: data.createdAt,
         role: data.role,
+        createdAt: data.createdAt,
       };
-      queryClient.setQueryData(queryKeys.auth.user, user);
+      queryClient.setQueryData(queryKeys.profile.me, seededProfile);
       // 로컬 스토리지에 역할 저장 (사이드바 표시/가드에 사용)
       try {
         localStorage.setItem("userRole", data.role || "");
@@ -223,43 +229,6 @@ export const useProfileQuery = () => {
   });
 };
 
-/**
- * 프로필 수정 Mutation (예시)
- */
-export const useUpdateProfileMutation = () => {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: {
-      name: string;
-      email: string;
-      department: string;
-    }) => {
-      // TODO: 실제 API 호출로 교체
-      // return api.put("api/profile/me", { json: data }).json();
-      return data;
-    },
-    onSuccess: () => {
-      // 프로필 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile.me });
-      toast({
-        title: "프로필 수정 완료",
-        description: "프로필 정보가 성공적으로 수정되었습니다.",
-        variant: "success",
-      });
-    },
-    onError: async (error: unknown) => {
-      const errorMessage = await getErrorMessage(error);
-      toast({
-        title: "프로필 수정 실패",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    },
-  });
-};
-
 // ===== Dashboard Query =====
 
 /**
@@ -283,5 +252,93 @@ export const useFAQsQuery = () => {
     queryKey: queryKeys.faqs.all,
     queryFn: () => getFAQs(),
     staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+  });
+};
+
+// ===== Profile Queries =====
+
+/**
+ * 내 프로필 조회 Query
+ */
+export const useMyProfileQuery = () => {
+  return useQuery({
+    queryKey: queryKeys.profile.me,
+    queryFn: (): Promise<UserDetailResponse> => getMyProfile(),
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+  });
+};
+
+/**
+ * 다른 사용자 프로필 조회 Query
+ */
+export const useUserProfileQuery = (userId: number) => {
+  return useQuery({
+    queryKey: queryKeys.profile.user(userId),
+    queryFn: (): Promise<UserDetailResponse> => getUserProfile(userId),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!userId,
+  });
+};
+
+/**
+ * 프로필 수정 Mutation (낙관적 UI 업데이트 적용)
+ */
+export const useUpdateProfileMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateProfileRequest): Promise<UserDetailResponse> =>
+      updateProfile(data),
+
+    // 낙관적 업데이트: 서버 응답 전에 즉시 UI 반영
+    onMutate: async (newData) => {
+      // 진행 중인 쿼리 취소 (충돌 방지)
+      await queryClient.cancelQueries({ queryKey: queryKeys.profile.me });
+
+      // 이전 데이터 백업 (롤백용)
+      const previousProfile = queryClient.getQueryData<UserDetailResponse>(
+        queryKeys.profile.me
+      );
+
+      // 캐시를 새 데이터로 즉시 업데이트
+      if (previousProfile) {
+        queryClient.setQueryData(queryKeys.profile.me, {
+          ...previousProfile,
+          ...newData,
+        });
+      }
+
+      // 롤백을 위해 이전 데이터 반환
+      return { previousProfile };
+    },
+
+    // 성공 시: 서버 데이터로 캐시 동기화
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.profile.me, data);
+      toast({
+        title: "프로필 수정 완료",
+        description: "프로필 정보가 성공적으로 수정되었습니다.",
+        variant: "success",
+      });
+    },
+
+    // 실패 시: 이전 데이터로 롤백
+    onError: async (error: unknown, _variables, context) => {
+      if (context?.previousProfile) {
+        queryClient.setQueryData(queryKeys.profile.me, context.previousProfile);
+      }
+      const errorMessage = await getErrorMessage(error);
+      toast({
+        title: "프로필 수정 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+
+    // 완료 시: 서버와 동기화 보장
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile.me });
+    },
   });
 };
