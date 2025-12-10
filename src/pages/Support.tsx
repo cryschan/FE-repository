@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useFAQsQuery,
   useMyInquiriesQuery,
@@ -35,7 +35,6 @@ const Support = () => {
     isError: isInquiriesError,
     error: inquiriesError,
   } = useMyInquiriesQuery(currentPage, 5);
-  const createMutation = useCreateInquiryMutation();
   // API 결과를 화면 모델로 매핑 (컴포넌트 기대 타입)
   const apiInquiries = useMemo(
     () =>
@@ -55,13 +54,14 @@ const Support = () => {
     [myInquiriesData]
   );
   const totalPages = myInquiriesData?.meta.totalPages ?? 1;
-  // 그룹 시작 페이지 계산
-  const groupStart =
-    Math.floor((currentPage - 1) / PAGES_PER_GROUP) * PAGES_PER_GROUP + 1;
-  if (groupStart !== startPage) {
-    // 상태 동기화
-    setStartPage(groupStart);
-  }
+  // 그룹 시작 페이지 동기화
+  useEffect(() => {
+    const groupStart =
+      Math.floor((currentPage - 1) / PAGES_PER_GROUP) * PAGES_PER_GROUP + 1;
+    if (groupStart !== startPage) {
+      setStartPage(groupStart);
+    }
+  }, [currentPage, startPage]);
 
   return (
     <div className="p-8">

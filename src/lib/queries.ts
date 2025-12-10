@@ -89,8 +89,11 @@ export const queryKeys = {
     detail: (id: number | string) => ["notices", "detail", id] as const,
   },
   inquiries: {
-    my: (page: number, size: number) =>
-      ["inquiries", "my", page, size] as const,
+    my: (
+      page: number,
+      size: number,
+      status?: "PENDING" | "IN_PROGRESS" | "COMPLETED"
+    ) => ["inquiries", "my", status ?? "ALL", page, size] as const,
     myDetail: (id: number | string) =>
       ["inquiries", "my", "detail", id] as const,
     admin: ["inquiries", "admin"] as const,
@@ -564,7 +567,7 @@ export const useMyInquiriesQuery = (
   };
 
   return useQuery({
-    queryKey: queryKeys.inquiries.my(page, size),
+    queryKey: queryKeys.inquiries.my(page, size, status),
     queryFn: async (): Promise<MyInquiriesQueryData> => {
       try {
         const res = await getMyInquiries(page, size, status);

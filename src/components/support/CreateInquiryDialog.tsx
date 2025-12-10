@@ -21,14 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CATEGORY_ENUM_TO_KR } from "@/constants/inquiry";
 
-const CATEGORIES = ["기능 문의", "결제/환불", "계정 문의", "기타"];
-const CATEGORY_KR_TO_ENUM: Record<string, string> = {
-  "기능 문의": "FEATURE",
-  "결제/환불": "PAYMENT",
-  "계정 문의": "ACCOUNT",
-  기타: "ETC",
-};
+const CATEGORIES = Object.values(CATEGORY_ENUM_TO_KR);
+const CATEGORY_KR_TO_ENUM: Record<string, string> = Object.fromEntries(
+  Object.entries(CATEGORY_ENUM_TO_KR).map(([enumKey, krValue]) => [
+    krValue,
+    enumKey,
+  ])
+);
 
 type CreateInquiryDialogProps = {
   open: boolean;

@@ -36,6 +36,17 @@ const MyInquiriesSection = ({
           className={onSelect ? "cursor-pointer hover:bg-muted/40" : undefined}
           onClick={() => onSelect?.(inquiry.id)}
           role={onSelect ? "button" : undefined}
+          tabIndex={onSelect ? 0 : undefined}
+          onKeyDown={
+            onSelect
+              ? (e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(inquiry.id);
+                  }
+                }
+              : undefined
+          }
         >
           <CardHeader>
             <div className="flex items-start justify-between">
