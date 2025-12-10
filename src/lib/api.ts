@@ -40,6 +40,25 @@ const API_BASE_URL = import.meta.env.DEV
 const ACCESS_TOKEN_KEY = "accessToken";
 const REFRESH_TOKEN_KEY = "refreshToken";
 
+let refreshRequest: Promise<string | null> | null = null;
+const runRefresh = async (): Promise<string | null> => {
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!refreshToken) {
+    return null;
+  }
+
+  try {
+    const { accessToken } = await refreshAccessToken({ refreshToken });
+    if (accessToken) {
+      localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+      return accessToken;
+    }
+  } catch (error) {
+    console.error("Refresh error:", error);
+  }
+  return null;
+};
+
 // ky 인스턴스 생성
 export const api = ky.create({
   prefixUrl: API_BASE_URL,
@@ -61,26 +80,64 @@ export const api = ky.create({
     ],
     afterResponse: [
       async (request, options, response) => {
-        // 401 에러 시 토큰 갱신 시도 후 재시도
+        // 401 → 토큰 갱신 시도
         if (response.status === 401) {
-          const isRetry = (options as any).__isRetry;
+          const isRetry = request.headers.get("X-Retry-Request") === "true";
           const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-          if (!isRetry && refreshToken) {
-            try {
-              const { accessToken } = await refreshAccessToken({
-                refreshToken,
-              });
-              if (accessToken) {
-                localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-                (options as any).__isRetry = true;
-                return api(request);
-              }
-            } catch {}
+
+          // 이미 재시도한 요청인데 또 401이 나면 더 이상 처리하지 않음
+          if (isRetry) {
+            return response;
           }
-          localStorage.removeItem(ACCESS_TOKEN_KEY);
-          localStorage.removeItem(REFRESH_TOKEN_KEY);
-          window.location.href = "/auth";
+
+          if (refreshToken) {
+            try {
+              // 여러 refresh 요청 동시 처리 방지 (race-safe)
+              if (!refreshRequest) {
+                refreshRequest = runRefresh().finally(() => {
+                  // 짧은 지연 후 초기화하여 동시 요청이 같은 promise 사용하도록 함
+                  setTimeout(() => {
+                    refreshRequest = null;
+                  }, 100);
+                });
+              }
+              const newToken = await refreshRequest;
+
+              // refresh 성공 → 새 access token 반영해 재요청
+              if (newToken) {
+                const url = new URL(request.url);
+                const relativePath = url.pathname + url.search;
+
+                // 완전히 새로운 요청으로 생성하되 X-Retry-Request 헤더 추가
+                const retryResponse = await api(relativePath, {
+                  ...options,
+                  method: request.method,
+                  headers: {
+                    ...(options.headers instanceof Headers
+                      ? Object.fromEntries(options.headers.entries())
+                      : options.headers || {}),
+                    "X-Retry-Request": "true",
+                    Authorization: `Bearer ${newToken}`,
+                  },
+                });
+
+                return retryResponse;
+              }
+            } catch (error) {
+              console.error("Refresh error:", error);
+              // refresh 실패하면 아래에서 로그아웃 처리
+            }
+          }
+
+          // refreshToken 없거나 refresh 실패 → 토큰 삭제
+          try {
+            localStorage.removeItem(ACCESS_TOKEN_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
+          } catch {}
+
+          return response;
         }
+
         return response;
       },
     ],
@@ -342,7 +399,7 @@ export const logout = async () => {
 
   setTimeout(() => {
     window.location.href = "/auth";
-  }, 2000);
+  }, 1000);
 };
 
 // ===== 에러 핸들링 유틸리티 =====
