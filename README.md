@@ -8,44 +8,38 @@
 
 ## ✨ 주요 기능
 
-1. 대시보드
-2. 블로그 글 관리
-3. 고객 지원 (QnA)
-4. 관리자페이지
+1. 회원가입 / 로그인
+2. 블로그 템플릿 설정
+3. 블로그 글 관리
+4. 고객 지원 (QnA, 내 문의)
 5. 내 정보 수정
-6. 회원가입 / 로그인
+6. 관리자페이지
 
 ## 🛠 기술 스택
 
 ### Frontend
 
-- **React 18.3.1** - UI 라이브러리
-- **TypeScript 5.8.3** - 타입 안정성
-- **Vite 5.4.19** - 빌드 도구
+- React 18.3.1 - UI 라이브러리
+- TypeScript 5.8.3 - 타입 안정성
+- Vite 5.4.19 - 빌드 도구
 
 ### 상태 관리 & 데이터
 
-- **TanStack React Query 5.83.0** - 서버 상태 관리 (캐싱, 자동 재검증)
-- **ky 1.14.0** - HTTP 클라이언트 (Axios보다 가볍고 빠른 성능)
-- **Sonner 1.7.4** - 토스트 알림
+- TanStack React Query 5.83.0 - 서버 상태 관리 (캐싱, 자동 재검증)
+- ky 1.14.0 - HTTP 클라이언트 (Axios보다 가볍고 빠른 성능)
+- Zod 3.25.76 - 스키마 검증
+- React Hook Form 7.61.1 - 폼 관리
 
 ### UI/UX
 
-- **shadcn/ui** - 컴포넌트 라이브러리 (Radix UI 기반)
-- **Tailwind CSS 3.4.17** - 스타일링
-- **Recharts 2.15.4** - 차트 라이브러리
-
-### 마크다운 & 폼
-
-- **React Markdown 10.1.0** - 마크다운 렌더링
-- **React Hook Form 7.61.1** - 폼 관리
-- **Zod 3.25.76** - 스키마 검증
+- Tailwind CSS 3.4.17 - 스타일링
+- shadcn/ui - 컴포넌트 라이브러리 (Radix UI 기반)
 
 ## 📦 설치 및 실행
 
 ### 사전 요구사항
 
-- Node.js 18+ 및 npm 10+ 설치 필요
+- Node.js 20+ 및 npm 10+ 설치 필요
 - [nvm 설치 가이드](https://github.com/nvm-sh/nvm#installing-and-updating)
 
 ### 설치 방법
@@ -65,17 +59,12 @@ npm install
 
 # 5. 환경 변수 설정
 cp .env.example .env
-# .env 파일을 열어서 API URL을 설정하세요
 
 # 6. 개발 서버 실행
 npm run dev
 ```
 
 ## 🧹 코드 포맷팅 (Prettier)
-
-프로젝트에 Prettier를 사용해 일관된 코드 스타일을 유지합니다.
-
-### VS Code 설정
 
 기본: 확장(Extension) 설치 후 설정 두 가지
 
@@ -89,13 +78,35 @@ npm run dev
 
 - 설정 열기(Cmd+,) → “format on save” 검색 → 켜기
 
-4. 동작 확인
+- 동작 확인
+  - 파일 저장 시 자동 정렬 or “Format Document”(Shift+Alt+F) 실행
 
-- 파일 저장 시 자동 정렬 or “Format Document”(Shift+Alt+F) 실행
+- 주의 사항
+  - 우리가 추가한 `.vscode/settings.json`이 자동 적용됩니다. 개인 사용자 설정이 우선하면 덮어쓸 수 있으니, 위 메뉴에서 확인하세요.
 
-5. 주의 사항
+## 🌐 환경 변수
 
-- 우리가 추가한 `.vscode/settings.json`이 자동 적용됩니다. 개인 사용자 설정이 우선하면 덮어쓸 수 있으니, 위 메뉴에서 확인하세요.
+프로젝트는 다음 환경 변수를 사용합니다:
+
+| 변수명              | 설명                | 기본값                  |
+| ------------------- | ------------------- | ----------------------- |
+| `VITE_API_BASE_URL` | 백엔드 API 서버 URL | `http://localhost:8080` |
+
+`.env.example` 파일을 복사하여 `.env` 파일을 생성하고 필요한 값을 설정하세요.
+
+```bash
+cp .env.example .env
+```
+
+## 🤖 자동 PR 코드리뷰 (ChatGPT)
+
+이 저장소는 PR이 생성/업데이트될 때 ChatGPT로 자동 코드리뷰를 남깁니다.
+
+- 워크플로우 파일: `.github/workflows/code_review_from_chatgpt.yml`
+
+- 설정 방법
+  - GitHub 시크릿에 `OPENAI_API_KEY` 추가 (Organization 또는 Repository Secret)
+  - 모델 교체: Repository Variables에 `MODEL` 변경해 원하는 모델로 지정
 
 ### 번들 사이즈 분석(rollup-plugin-visualizer)
 
@@ -111,42 +122,6 @@ open stats.html
 # 특정 브라우저로 열기 (예: Chrome)
 open -a "Google Chrome" stats.html
 ```
-
-## 🌐 환경 변수
-
-프로젝트는 다음 환경 변수를 사용합니다:
-
-| 변수명              | 설명                | 기본값                  |
-| ------------------- | ------------------- | ----------------------- |
-| `VITE_API_BASE_URL` | 백엔드 API 서버 URL | `http://localhost:8080` |
-
-`.env.example` 파일을 복사하여 `.env` 파일을 생성하고 필요한 값을 설정하세요.
-
-## 🔐 인증 및 권한
-
-- 일반 사용자: 대시보드, 블로그 글 관리, 고객 지원, 내 정보 수정
-- 관리자: 추가로 관리자페이지 접근 (문의 관리)
-
-## 📖 추가 문서
-
-- [React Query 사용 가이드](./REACT_QUERY_GUIDE.md) - TanStack React Query 활용 방법 및 API 연동 가이드
-
-## 🤖 자동 PR 코드리뷰 (ChatGPT)
-
-이 저장소는 PR이 생성/업데이트될 때 ChatGPT로 자동 코드리뷰를 남깁니다.
-
-- 워크플로우 파일: `.github/workflows/code_review_from_chatgpt.yml`
-- 트리거: `pull_request` 이벤트의 `opened`, `synchronize`
-- 환경 변수
-  - `GITHUB_TOKEN`: GitHub가 자동 제공 (PR 코멘트 권한)
-  - `OPENAI_API_KEY`: OpenAI API 키 (조직 시크릿 사용 가능)
-  - `LANGUAGE`: Korean
-  - `MODEL`: Repository variables의 `MODEL` 값을 우선 사용하고, 없으면 `gpt-4o-mini`를 기본값으로 사용
-
-설정 방법
-
-- GitHub 시크릿에 `OPENAI_API_KEY` 추가 (Organization 또는 Repository Secret)
-- 모델 교체: Repository Variables에 `MODEL` 변경해 원하는 모델로 지정
 
 ## 📝 라이선스
 
