@@ -84,7 +84,6 @@ export const api = ky.create({
         if (response.status === 401) {
           const isRetry = request.headers.get("X-Retry-Request") === "true";
           const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-          const oldAccessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
 
           // 이미 재시도한 요청인데 또 401이 나면 더 이상 처리하지 않음
           if (isRetry) {
@@ -93,10 +92,16 @@ export const api = ky.create({
 
           if (refreshToken) {
             try {
-              // 여러 refresh 요청 동시 처리 방지
-              refreshRequest = refreshRequest ?? runRefresh();
+              // 여러 refresh 요청 동시 처리 방지 (race-safe)
+              if (!refreshRequest) {
+                refreshRequest = runRefresh().finally(() => {
+                  // 짧은 지연 후 초기화하여 동시 요청이 같은 promise 사용하도록 함
+                  setTimeout(() => {
+                    refreshRequest = null;
+                  }, 100);
+                });
+              }
               const newToken = await refreshRequest;
-              refreshRequest = null;
 
               // refresh 성공 → 새 access token 반영해 재요청
               if (newToken) {
