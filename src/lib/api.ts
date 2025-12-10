@@ -111,6 +111,7 @@ export const api = ky.create({
                 // 완전히 새로운 요청으로 생성하되 X-Retry-Request 헤더 추가
                 const retryResponse = await api(relativePath, {
                   ...options,
+                  method: request.method,
                   headers: {
                     ...(options.headers instanceof Headers
                       ? Object.fromEntries(options.headers.entries())
