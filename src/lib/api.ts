@@ -26,12 +26,12 @@ import type {
   NoticeUpdateRequest,
   NoticeUpdateResponse,
   NoticeDeleteResponse,
-  InquiriesResponse,
   InquiryDetailResponse,
   InquiriesPageResponse,
+  AdminInquiriesPageResponse,
   CreateInquiryRequest,
+  AdminAnswerRequest,
 } from "./api.types";
-// 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
 export type * from "./api.types";
 
 // API 기본 설정
@@ -312,14 +312,40 @@ export const createInquiry = async (
 };
 
 // Admin inquiries
-export const getAdminInquiries = async (): Promise<InquiriesPageResponse> => {
-  return api.get("/api/admin/inquiries").json<InquiriesPageResponse>();
+export const getAdminInquiries = async (
+  page: number = 1,
+  size: number = 10,
+  status?: "PENDING" | "IN_PROGRESS" | "COMPLETED"
+): Promise<AdminInquiriesPageResponse> => {
+  const searchParams: Record<string, string> = {
+    page: String(page),
+    size: String(size),
+  };
+  if (status) searchParams.status = status;
+  return api
+    .get("/api/admin/inquiries", { searchParams })
+    .json<AdminInquiriesPageResponse>();
 };
 
 export const getAdminInquiryDetail = async (
   id: number | string
 ): Promise<InquiryDetailResponse> => {
   return api.get(`/api/admin/inquiries/${id}`).json<InquiryDetailResponse>();
+};
+
+export const createAdminInquiryAnswer = async (
+  id: number | string,
+  data: AdminAnswerRequest
+): Promise<InquiryDetailResponse> => {
+  return api
+    .post(`/api/admin/inquiries/${id}/answer`, { json: data })
+    .json<InquiryDetailResponse>();
+};
+
+export const deleteAdminInquiryAnswer = async (
+  id: number | string
+): Promise<void> => {
+  await api.delete(`/api/admin/inquiries/${id}/answer`);
 };
 
 // ===== User Profile =====

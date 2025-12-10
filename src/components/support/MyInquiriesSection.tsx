@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock } from "lucide-react";
+import { formatDateKorean } from "@/lib/utils";
 
 export type Inquiry = {
   id: string;
@@ -44,7 +45,7 @@ const MyInquiriesSection = ({
                   <CardTitle>제목: {inquiry.title}</CardTitle>
                 </div>
                 <CardDescription className="mt-2 pl-1">
-                  작성일: {inquiry.createdAt}
+                  작성일: {formatDateKorean(inquiry.createdAt ?? "")}
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2 mb-2">

@@ -1,11 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -26,10 +20,19 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, CheckCircle } from "lucide-react";
+import { Clock, CheckCircle, Trash2 } from "lucide-react";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import {
+  useAdminInquiriesQuery,
+  useAdminInquiryDetailQuery,
+  useCreateAdminAnswerMutation,
+  useDeleteAdminAnswerMutation,
+} from "@/lib/queries";
+import { CATEGORY_ENUM_TO_KR } from "@/constants/inquiry";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AdminInquiry = {
-  id: string;
+  id: number | string;
   title: string;
   category: string;
   status: "pending" | "in_progress" | "completed";
@@ -40,63 +43,51 @@ type AdminInquiry = {
   email?: string | null;
 };
 
-const initialInquiries: AdminInquiry[] = [
-  {
-    id: "1",
-    title: "블로그 글 생성 중 오류가 발생했습니다",
-    category: "기술 문의",
-    status: "completed",
-    createdAt: "2024-11-15",
-    content: "생성 과정에서 500 에러가 떠요",
-    answer:
-      "문의 주신 내용 확인했습니다. 해당 오류는 일시적인 서버 문제로 인한 것이었으며, 현재는 정상적으로 작동하고 있습니다. 불편을 드려 죄송합니다.",
-    name: "홍길동",
-    email: "hong@example.com",
-  },
-  {
-    id: "2",
-    title: "카테고리 추가가 가능한가요?",
-    category: "기능 문의",
-    status: "pending",
-    createdAt: "2024-11-14",
-    content: "스포츠 하위 카테고리를 더 추가하고 싶어요",
-    answer: null,
-    name: "김민수",
-    email: "kim@example.com",
-  },
-  {
-    id: "3",
-    title: "결제 관련 문의",
-    category: "결제/환불",
-    status: "completed",
-    createdAt: "2024-11-10",
-    content: "결제 영수증을 재발급 받을 수 있을까요?",
-    answer: "내 정보 > 결제 관리에서 영수증 재발급이 가능합니다.",
-    name: "이영희",
-    email: "lee@example.com",
-  },
-];
-
 const Inquiry = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  // 페이지네이션 및 상태 필터
+  const PAGE_SIZE = 10;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<
+    "PENDING" | "IN_PROGRESS" | "COMPLETED" | undefined
+  >(undefined);
 
-  const [inquiries, setInquiries] = useState<AdminInquiry[]>(initialInquiries);
+  const [inquiries, setInquiries] = useState<AdminInquiry[]>([]);
+  const { data: list } = useAdminInquiriesQuery(
+    statusFilter,
+    currentPage,
+    PAGE_SIZE
+  );
+  const totalPages = list?.totalPages ?? 1;
+  useEffect(() => {
+    const items: AdminInquiry[] =
+      list?.inquiries?.map((it) => ({
+        id: it.id,
+        title: it.title,
+        category: CATEGORY_ENUM_TO_KR[it.inquiryCategory] || it.inquiryCategory,
+        status: (it.status === "COMPLETED"
+          ? "completed"
+          : it.status === "IN_PROGRESS"
+            ? "in_progress"
+            : "pending") as "completed" | "in_progress" | "pending",
+        createdAt: it.createdAt?.slice(0, 10) ?? "",
+        name: it.userName,
+        email: it.userEmail,
+      })) ?? [];
+    setInquiries(items);
+  }, [list]);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<AdminInquiry | null>(null);
+  const { data: detail, isLoading: isDetailLoading } =
+    useAdminInquiryDetailQuery(active?.id);
   const [answerDraft, setAnswerDraft] = useState("");
-
-  // 미답변 우선 정렬, 동일 상태는 최신 작성일 순
-  const sortedInquiries = useMemo(() => {
-    const rank = (s: AdminInquiry["status"]) =>
-      s === "pending" ? 0 : s === "in_progress" ? 1 : 2;
-    return [...inquiries].sort((a, b) => {
-      if (a.status !== b.status) return rank(a.status) - rank(b.status);
-      return b.createdAt.localeCompare(a.createdAt);
-    });
-  }, [inquiries]);
+  const createAnswerMutation = useCreateAdminAnswerMutation();
+  const deleteAnswerMutation = useDeleteAdminAnswerMutation();
 
   useEffect(() => {
-    setAnswerDraft(active?.answer ?? "");
+    // 새로운 문의를 열면 입력값 초기화
+    setAnswerDraft("");
   }, [active]);
 
   const openDetail = (item: AdminInquiry) => {
@@ -106,30 +97,30 @@ const Inquiry = () => {
 
   const saveAnswer = () => {
     if (!active) return;
+    if (detail?.answer) return;
     if (!answerDraft.trim()) {
       toast({
         title: "답변 내용을 입력하세요",
-        description: "빈 답변은 저장할 수 없습니다.",
+        description: "빈 답변은 등록할 수 없습니다.",
       });
       return;
     }
-
-    setInquiries((prev) =>
-      prev.map((q) =>
-        q.id === active.id
-          ? { ...q, answer: answerDraft.trim(), status: "completed" }
-          : q
-      )
+    createAnswerMutation.mutate(
+      { id: active.id, answerContent: answerDraft.trim() },
+      {
+        onSuccess: () => {
+          setOpen(false);
+          setAnswerDraft("");
+          // 추가 보강: 목록 전체 무효화 (status/page/size 조합 전체)
+          queryClient.invalidateQueries({
+            predicate: (q) =>
+              Array.isArray(q.queryKey) &&
+              q.queryKey[0] === "admin" &&
+              q.queryKey[1] === "inquiries",
+          });
+        },
+      }
     );
-
-    toast({
-      title: "답변이 저장되었습니다",
-      description: "문의 상태가 답변완료로 변경되었습니다.",
-      variant: "success",
-    });
-    setOpen(false);
-    setActive(null);
-    setAnswerDraft("");
   };
 
   return (
@@ -137,13 +128,37 @@ const Inquiry = () => {
       <div className="w-full mx-auto p-8 space-y-6">
         <h1 className="text-3xl font-bold text-foreground">고객 문의 관리</h1>
 
-        <Card className="shadow-elevated">
+        <Card className="shadow-elevated min-h-[700.5px]">
           <CardHeader>
-            <CardTitle>문의 관리</CardTitle>
-            <CardDescription>미답변 문의가 상단에 표시됩니다</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>문의 관리</CardTitle>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted-foreground">상태</label>
+                <select
+                  className="border rounded px-2 py-1 text-sm bg-background"
+                  value={statusFilter ?? ""}
+                  onChange={(e) => {
+                    const v = e.target.value as
+                      | "PENDING"
+                      | "IN_PROGRESS"
+                      | "COMPLETED"
+                      | "";
+                    setStatusFilter(v === "" ? undefined : v);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="">전체</option>
+                  <option value="PENDING">미답변</option>
+                  <option value="IN_PROGRESS">답변중</option>
+                  <option value="COMPLETED">답변완료</option>
+                </select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            {sortedInquiries.length === 0 ? (
+            {inquiries.length === 0 ? (
               <div className="text-sm text-muted-foreground py-8 text-center">
                 확인할 문의가 없습니다.
               </div>
@@ -158,7 +173,7 @@ const Inquiry = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedInquiries.map((q) => (
+                  {inquiries.map((q) => (
                     <TableRow
                       key={q.id}
                       className="cursor-pointer"
@@ -207,6 +222,13 @@ const Inquiry = () => {
           </CardContent>
         </Card>
 
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onChange={setCurrentPage}
+          pagesPerGroup={5}
+        />
+
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -235,7 +257,11 @@ const Inquiry = () => {
               </DialogDescription>
             </DialogHeader>
 
-            {active && (
+            {isDetailLoading ? (
+              <div className="py-8 text-center text-muted-foreground">
+                상세를 불러오는 중...
+              </div>
+            ) : active ? (
               <div className="space-y-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">
@@ -244,35 +270,79 @@ const Inquiry = () => {
                         문의자: {active.name ?? "알수없음"}{" "}
                         {active.email ? `(${active.email})` : ""}
                       </>
-                    ) : (
-                      "문의 상세"
-                    )}
+                    ) : null}
                   </p>
-                  {active.content && (
-                    <div className="bg-muted/30 p-3 rounded-md text-sm text-foreground">
-                      {active.content}
+                  {(detail?.content || active.content) && (
+                    <div className="bg-muted/30 p-3 rounded-md text-sm text-foreground whitespace-pre-wrap">
+                      {detail?.content ?? active.content}
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">
-                    답변 작성
-                  </label>
-                  <Textarea
-                    value={answerDraft}
-                    onChange={(e) => setAnswerDraft(e.target.value)}
-                    placeholder="문의에 대한 답변을 작성하세요"
-                    className="min-h-[160px]"
-                  />
-                </div>
-              </div>
-            )}
+                {detail?.answer && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-foreground">
+                      기존 답변
+                    </p>
+                    <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-900 whitespace-pre-wrap">
+                      {detail.answer?.answerContent}
+                      <div className="mt-2 text-xs opacity-70">
+                        답변일시:{" "}
+                        {((detail.answer as any)?.createdAt ?? "") as string}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-            <DialogFooter>
-              <Button onClick={saveAnswer}>
-                {active?.status === "completed" ? "답변 수정" : "답변 등록"}
-              </Button>
+                {!detail?.answer && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">
+                      답변 작성
+                    </label>
+                    <Textarea
+                      value={answerDraft}
+                      onChange={(e) => setAnswerDraft(e.target.value)}
+                      placeholder="문의에 대한 답변을 작성하세요"
+                      className="min-h-[160px]"
+                    />
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            <DialogFooter className="flex items-center gap-2">
+              {!detail?.answer && active && (
+                <Button
+                  onClick={saveAnswer}
+                  disabled={createAnswerMutation.status === "pending"}
+                >
+                  답변하기
+                </Button>
+              )}
+              {detail?.answer && active && (
+                <Button
+                  variant="destructive"
+                  disabled={deleteAnswerMutation.status === "pending"}
+                  onClick={() =>
+                    deleteAnswerMutation.mutate(active.id, {
+                      onSuccess: () => {
+                        setOpen(false);
+                        // closed after deletion
+                        // 추가 보강: 목록 전체 무효화 (status/page/size 조합 전체)
+                        queryClient.invalidateQueries({
+                          predicate: (q) =>
+                            Array.isArray(q.queryKey) &&
+                            q.queryKey[0] === "admin" &&
+                            q.queryKey[1] === "inquiries",
+                        });
+                      },
+                    })
+                  }
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  답변 삭제
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

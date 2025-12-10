@@ -283,6 +283,34 @@ export type InquiryDetailResponse = {
   } | null;
 };
 
+// ===== Admin Inquiries =====
+export type AdminInquiryListItem = {
+  id: number;
+  userId: number;
+  userEmail: string;
+  userName: string;
+  title: string;
+  inquiryCategory: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | string;
+  createdAt: string;
+  updatedAt: string;
+  hasAnswer: boolean;
+};
+
+export type AdminInquiriesPageResponse = {
+  inquiries: AdminInquiryListItem[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+};
+
+// ===== Admin Answer =====
+export type AdminAnswerRequest = {
+  answerContent: string;
+};
 // 문의 생성 요청
 export type CreateInquiryRequest = {
   title: string;

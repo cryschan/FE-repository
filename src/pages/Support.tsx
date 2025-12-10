@@ -8,18 +8,11 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import FAQSection from "@/components/support/FAQSection";
 import MyInquiriesSection from "@/components/support/MyInquiriesSection";
 import CreateInquiryDialog from "@/components/support/CreateInquiryDialog";
 import MyInquiryDetailDialog from "@/components/support/MyInquiryDetailDialog";
-
-const CATEGORY_ENUM_TO_KR: Record<string, string> = {
-  FEATURE: "기능 문의",
-  PAYMENT: "결제/환불",
-  ACCOUNT: "계정 문의",
-  ETC: "기타",
-};
+import { CATEGORY_ENUM_TO_KR } from "@/constants/inquiry";
 
 const Support = () => {
   const [selectedTab, setSelectedTab] = useState("faq");
