@@ -237,3 +237,83 @@ export type NoticesPageResponse = {
   numberOfElements: number;
   empty: boolean;
 };
+
+// ===== Inquiries (Customer Support) =====
+// 내 문의 목록 아이템
+export type MyInquiryListItem = {
+  id: number;
+  title: string;
+  inquiryCategory: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | string;
+  createdAt: string; // ISO
+  updatedAt: string; // ISO
+  content?: string | null;
+  hasAnswer: boolean;
+};
+
+// 내 문의 페이지 응답(페이지형)
+export type InquiriesPageResponse = {
+  inquiries: MyInquiryListItem[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+};
+
+// 백엔드 스펙이 배열/페이지형 둘 다 존재할 수 있어 유니온으로 허용
+export type InquiriesResponse = InquiriesPageResponse;
+
+// 내 문의 상세
+export type InquiryDetailResponse = {
+  id: number;
+  userId: number;
+  title: string;
+  inquiryCategory: string;
+  content: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | string;
+  createdAt: string;
+  updatedAt: string;
+  answer: {
+    id: number;
+    adminUserId: number;
+    answerContent: string;
+    createdAt: string;
+  } | null;
+};
+
+// ===== Admin Inquiries =====
+export type AdminInquiryListItem = {
+  id: number;
+  userId: number;
+  userEmail: string;
+  userName: string;
+  title: string;
+  inquiryCategory: string;
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | string;
+  createdAt: string;
+  updatedAt: string;
+  hasAnswer: boolean;
+};
+
+export type AdminInquiriesPageResponse = {
+  inquiries: AdminInquiryListItem[];
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  first: boolean;
+  last: boolean;
+};
+
+// ===== Admin Answer =====
+export type AdminAnswerRequest = {
+  answerContent: string;
+};
+// 문의 생성 요청
+export type CreateInquiryRequest = {
+  title: string;
+  inquiryCategory: string; // FEATURE | PAYMENT | ACCOUNT | ETC
+  content: string;
+};

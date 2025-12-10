@@ -21,22 +21,37 @@ import {
   createNotice,
   updateNotice,
   deleteNotice,
-  type SignupRequest,
-  type LoginRequest,
-  type SignupResponse,
-  type LoginResponse,
-  type EmailCheckResponse,
-  type BlogsMyResponse,
-  type UserDetailResponse,
-  type UpdateProfileRequest,
-  type NoticesPageResponse,
-  type NoticeDetail,
-  type NoticeCreateRequest,
-  type NoticeCreateResponse,
-  type NoticeUpdateRequest,
-  type NoticeUpdateResponse,
-  type NoticeDeleteResponse,
+  getMyInquiries,
+  getMyInquiryDetail,
+  getAdminInquiries,
+  getAdminInquiryDetail,
+  createAdminInquiryAnswer,
+  deleteAdminInquiryAnswer,
+  createInquiry,
 } from "./api";
+import type {
+  SignupRequest,
+  LoginRequest,
+  SignupResponse,
+  LoginResponse,
+  EmailCheckResponse,
+  BlogsMyResponse,
+  UserDetailResponse,
+  UpdateProfileRequest,
+  NoticesPageResponse,
+  NoticeDetail,
+  NoticeCreateRequest,
+  NoticeCreateResponse,
+  NoticeUpdateRequest,
+  NoticeUpdateResponse,
+  NoticeDeleteResponse,
+  InquiriesResponse,
+  MyInquiryListItem,
+  InquiriesPageResponse,
+  InquiryDetailResponse,
+  CreateInquiryRequest,
+  AdminAnswerRequest,
+} from "./api.types";
 
 // ===== Query Keys =====
 export const queryKeys = {
@@ -59,6 +74,11 @@ export const queryKeys = {
   admin: {
     inquiries: ["admin", "inquiries"] as const,
     dashboard: ["admin", "dashboard"] as const,
+    inquiriesList: (
+      status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | undefined,
+      page: number,
+      size: number
+    ) => ["admin", "inquiries", status ?? "ALL", page, size] as const,
   },
   faqs: {
     all: ["faqs", "all"] as const,
@@ -67,6 +87,18 @@ export const queryKeys = {
     list: (page: number, size: number) =>
       ["notices", "list", page, size] as const,
     detail: (id: number | string) => ["notices", "detail", id] as const,
+  },
+  inquiries: {
+    my: (
+      page: number,
+      size: number,
+      status?: "PENDING" | "IN_PROGRESS" | "COMPLETED"
+    ) => ["inquiries", "my", status ?? "ALL", page, size] as const,
+    myDetail: (id: number | string) =>
+      ["inquiries", "my", "detail", id] as const,
+    admin: ["inquiries", "admin"] as const,
+    adminDetail: (id: number | string) =>
+      ["inquiries", "admin", "detail", id] as const,
   },
 } as const;
 
@@ -504,6 +536,238 @@ export const useDeleteNoticeMutation = () => {
       toast({
         title: "공지사항 삭제 실패",
         description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// ===== Inquiries Queries =====
+
+export type MyInquiriesQueryData = {
+  items: MyInquiryListItem[];
+  meta: {
+    currentPage: number;
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    first: boolean;
+    last: boolean;
+  };
+};
+
+export const useMyInquiriesQuery = (
+  page: number = 1,
+  size: number = 5,
+  status?: "PENDING" | "IN_PROGRESS" | "COMPLETED"
+) => {
+  // 타입 가드: 페이지 응답 여부 판별
+  const isPage = (res: InquiriesResponse): res is InquiriesPageResponse => {
+    return !Array.isArray(res) && "inquiries" in res;
+  };
+
+  return useQuery({
+    queryKey: queryKeys.inquiries.my(page, size, status),
+    queryFn: async (): Promise<MyInquiriesQueryData> => {
+      try {
+        const res = await getMyInquiries(page, size, status);
+        if (Array.isArray(res)) {
+          const items = res;
+          const meta = {
+            currentPage: page,
+            totalPages: 1,
+            totalElements: items.length,
+            size,
+            first: page === 1,
+            last: true,
+          };
+          return { items, meta };
+        } else if (isPage(res)) {
+          const {
+            inquiries,
+            currentPage,
+            totalPages,
+            totalElements,
+            size: pageSize,
+            first,
+            last,
+          } = res;
+          return {
+            items: inquiries,
+            meta: {
+              currentPage,
+              totalPages,
+              totalElements,
+              size: pageSize,
+              first,
+              last,
+            },
+          };
+        }
+        // 불명확 응답 대비: 보수적으로 빈 값 반환
+        return {
+          items: [],
+          meta: {
+            currentPage: page,
+            totalPages: 1,
+            totalElements: 0,
+            size,
+            first: page === 1,
+            last: true,
+          },
+        };
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    staleTime: 1 * 60 * 1000,
+  });
+};
+
+export const useCreateInquiryMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateInquiryRequest): Promise<InquiryDetailResponse> =>
+      createInquiry(data),
+    onSuccess: () => {
+      // 전체 'my inquiries' 쿼리 무효화 (모든 페이지/사이즈)
+      queryClient.invalidateQueries({ queryKey: ["inquiries", "my"] });
+      toast({
+        title: "문의가 접수되었습니다",
+        description: "빠른 시일 내에 답변 드리겠습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const message = await getErrorMessage(error);
+      toast({
+        title: "문의 등록 실패",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useMyInquiryDetailQuery = (id: number | string | undefined) => {
+  return useQuery({
+    queryKey: queryKeys.inquiries.myDetail(id ?? ""),
+    queryFn: async (): Promise<InquiryDetailResponse> => {
+      if (!id) throw new Error("Inquiry ID is required");
+      try {
+        return await getMyInquiryDetail(id);
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useAdminInquiriesQuery = (
+  status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | undefined,
+  page: number,
+  size: number
+) => {
+  return useQuery({
+    queryKey: queryKeys.admin.inquiriesList(status, page, size),
+    queryFn: async () => {
+      try {
+        return await getAdminInquiries(page, size, status);
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    placeholderData: keepPreviousData,
+    staleTime: 30 * 1000,
+  });
+};
+
+export const useAdminInquiryDetailQuery = (id: number | string | undefined) => {
+  return useQuery({
+    queryKey: queryKeys.inquiries.adminDetail(id ?? ""),
+    queryFn: async (): Promise<InquiryDetailResponse> => {
+      if (!id) throw new Error("Admin Inquiry ID is required");
+      try {
+        return await getAdminInquiryDetail(id);
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+/**
+ * 관리자 답변 등록
+ */
+export const useCreateAdminAnswerMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number | string; answerContent: string }) =>
+      createAdminInquiryAnswer(vars.id, {
+        answerContent: vars.answerContent,
+      } as AdminAnswerRequest),
+    onSuccess: (_data, vars) => {
+      // 상세/목록 동기화
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inquiries.adminDetail(vars.id),
+      });
+      // 모든 관리자 문의 목록 쿼리 무효화 (status/page/size 조합 전체)
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0] === "admin" &&
+          q.queryKey[1] === "inquiries",
+      });
+      toast({ title: "답변이 등록되었습니다", variant: "success" });
+    },
+    onError: async (error: unknown) => {
+      const message = await getErrorMessage(error);
+      toast({
+        title: "답변 등록 실패",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * 관리자 답변 삭제
+ */
+export const useDeleteAdminAnswerMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number | string) => deleteAdminInquiryAnswer(id),
+    onSuccess: (_data, id) => {
+      // 목록과 상세를 모두 무효화하여 최신 상태로 갱신
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inquiries.adminDetail(id),
+      });
+      // 모든 관리자 문의 목록 쿼리 무효화 (status/page/size 조합 전체)
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0] === "admin" &&
+          q.queryKey[1] === "inquiries",
+      });
+      toast({ title: "답변이 삭제되었습니다", variant: "success" });
+    },
+    onError: async (error: unknown) => {
+      const message = await getErrorMessage(error);
+      toast({
+        title: "답변 삭제 실패",
+        description: message,
         variant: "destructive",
       });
     },

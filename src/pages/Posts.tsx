@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Edit, ChevronLeft, ChevronRight, Copy, ImagePlus } from "lucide-react";
+import { Edit, Copy, ImagePlus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 // @ts-ignore
 import remarkGfm from "remark-gfm";
@@ -34,6 +34,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { useToast } from "@/hooks/use-toast";
 import { useMyBlogsQuery, queryKeys } from "@/lib/queries";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { formatDateKorean } from "@/lib/utils";
 import { CATEGORIES as TEMPLATE_CATEGORIES } from "@/constants/AISettings";
 import {
@@ -474,31 +475,12 @@ const Posts = () => {
         </Card>
 
         {/* 페이지네이션 */}
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {currentPage} / {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-            }
-            disabled={currentPage === totalPages}
-            className="hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onChange={setCurrentPage}
+          pagesPerGroup={5}
+        />
 
         {/* 수정 다이얼로그 */}
         <Dialog

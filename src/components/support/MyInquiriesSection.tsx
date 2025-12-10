@@ -7,12 +7,13 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Clock } from "lucide-react";
+import { formatDateKorean } from "@/lib/utils";
 
 export type Inquiry = {
   id: string;
   title: string;
   category: string;
-  status: "answered" | "pending";
+  status: "pending" | "in_progress" | "completed";
   createdAt: string;
   answer?: string | null;
   content?: string | null;
@@ -20,40 +21,71 @@ export type Inquiry = {
 
 type MyInquiriesSectionProps = {
   inquiries: Inquiry[];
+  onSelect?: (id: string) => void;
 };
 
-const MyInquiriesSection = ({ inquiries }: MyInquiriesSectionProps) => {
+const MyInquiriesSection = ({
+  inquiries,
+  onSelect,
+}: MyInquiriesSectionProps) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-[calc(100vh-20rem)] overflow-y-auto">
       {inquiries.map((inquiry) => (
-        <Card key={inquiry.id}>
+        <Card
+          key={inquiry.id}
+          className={onSelect ? "cursor-pointer hover:bg-muted/40" : undefined}
+          onClick={() => onSelect?.(inquiry.id)}
+          role={onSelect ? "button" : undefined}
+          tabIndex={onSelect ? 0 : undefined}
+          onKeyDown={
+            onSelect
+              ? (e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelect(inquiry.id);
+                  }
+                }
+              : undefined
+          }
+        >
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge
-                    variant={
-                      inquiry.status === "answered" ? "default" : "secondary"
-                    }
-                  >
-                    {inquiry.status === "answered" ? (
-                      <span className="flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3" />
-                        답변완료
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        대기중
-                      </span>
-                    )}
-                  </Badge>
+                <div className="flex gap-2">
                   <Badge variant="outline">{inquiry.category}</Badge>
+                  <CardTitle>제목: {inquiry.title}</CardTitle>
                 </div>
-                <CardTitle>{inquiry.title}</CardTitle>
-                <CardDescription className="mt-2">
-                  작성일: {inquiry.createdAt}
+                <CardDescription className="mt-2 pl-1">
+                  작성일: {formatDateKorean(inquiry.createdAt ?? "")}
                 </CardDescription>
+              </div>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge
+                  variant={
+                    inquiry.status === "completed"
+                      ? "default"
+                      : inquiry.status === "in_progress"
+                        ? "outline"
+                        : "secondary"
+                  }
+                >
+                  {inquiry.status === "completed" ? (
+                    <span className="flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" />
+                      답변완료
+                    </span>
+                  ) : inquiry.status === "in_progress" ? (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      답변중
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      대기중
+                    </span>
+                  )}
+                </Badge>
               </div>
             </div>
           </CardHeader>
