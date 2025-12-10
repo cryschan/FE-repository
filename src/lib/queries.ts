@@ -16,15 +16,26 @@ import {
   getMyProfile,
   getUserProfile,
   updateProfile,
+  getNotices,
+  getNoticeDetail,
+  createNotice,
+  updateNotice,
+  deleteNotice,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
   type LoginResponse,
   type EmailCheckResponse,
-  type DashboardResponse,
   type BlogsMyResponse,
   type UserDetailResponse,
   type UpdateProfileRequest,
+  type NoticesPageResponse,
+  type NoticeDetail,
+  type NoticeCreateRequest,
+  type NoticeCreateResponse,
+  type NoticeUpdateRequest,
+  type NoticeUpdateResponse,
+  type NoticeDeleteResponse,
 } from "./api";
 
 // ===== Query Keys =====
@@ -51,6 +62,11 @@ export const queryKeys = {
   },
   faqs: {
     all: ["faqs", "all"] as const,
+  },
+  notices: {
+    list: (page: number, size: number) =>
+      ["notices", "list", page, size] as const,
+    detail: (id: number | string) => ["notices", "detail", id] as const,
   },
 } as const;
 
@@ -185,8 +201,6 @@ export const useUpdatePostMutation = () => {
       title: string;
       content: string;
     }) => {
-      // TODO: 실제 API 호출로 교체
-      // return api.put(`api/posts/${data.id}`, { json: data }).json();
       return data;
     },
     onSuccess: (data) => {
@@ -220,8 +234,6 @@ export const useProfileQuery = () => {
   return useQuery({
     queryKey: queryKeys.profile.me,
     queryFn: async () => {
-      // TODO: 실제 API 호출로 교체
-      // return api.get("api/profile/me").json();
       return null;
     },
     staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
@@ -339,6 +351,161 @@ export const useUpdateProfileMutation = () => {
     // 완료 시: 서버와 동기화 보장
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.profile.me });
+    },
+  });
+};
+
+/**
+ * 공지사항 목록 조회 Query (페이지네이션)
+ */
+export const useNoticesQuery = (page: number, size: number = 10) => {
+  return useQuery({
+    queryKey: queryKeys.notices.list(page, size),
+    queryFn: async (): Promise<NoticesPageResponse> => {
+      try {
+        return await getNotices(page, size);
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    staleTime: 30 * 1000, // 30초간 캐시 유지
+    placeholderData: keepPreviousData,
+  });
+};
+
+/**
+ * 공지사항 상세 조회 Query
+ */
+export const useNoticeDetailQuery = (id: number | string | undefined) => {
+  return useQuery({
+    queryKey: queryKeys.notices.detail(id ?? ""),
+    queryFn: async (): Promise<NoticeDetail> => {
+      if (!id) throw new Error("Notice ID is required");
+      try {
+        return await getNoticeDetail(id);
+      } catch (error) {
+        // 개발 환경에서 에러 로깅
+        if (import.meta.env.DEV) {
+          console.error("[useNoticeDetailQuery Error]", {
+            error,
+            id,
+            url: `/api/notices/${id}`,
+          });
+        }
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    enabled: !!id, // id가 있을 때만 쿼리 실행
+    staleTime: 1 * 60 * 1000, // 1분간 캐시 유지
+  });
+};
+
+/**
+ * 공지사항 생성 Mutation
+ */
+export const useCreateNoticeMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: NoticeCreateRequest) => createNotice(data),
+    onSuccess: (data: NoticeCreateResponse) => {
+      // 공지사항 목록 캐시 무효화하여 새로고침
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "list"],
+      });
+      toast({
+        title: "공지사항이 작성되었습니다",
+        description: "공지사항이 성공적으로 생성되었습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const errorMessage = await getErrorMessage(error);
+      toast({
+        title: "공지사항 작성 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * 공지사항 수정 Mutation
+ */
+export const useUpdateNoticeMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number | string;
+      data: NoticeUpdateRequest;
+    }) => updateNotice(id, data),
+    onSuccess: (response: NoticeUpdateResponse, variables) => {
+      // 공지사항 상세 및 목록 캐시 무효화
+      // id를 문자열과 숫자 모두 무효화
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "detail"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "list"],
+      });
+      toast({
+        title: "공지사항이 수정되었습니다",
+        description:
+          response.message || "공지사항이 성공적으로 수정되었습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const errorMessage = await getErrorMessage(error);
+      toast({
+        title: "공지사항 수정 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+/**
+ * 공지사항 삭제 Mutation
+ */
+export const useDeleteNoticeMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number | string) => deleteNotice(id),
+    onSuccess: (response: NoticeDeleteResponse) => {
+      // 공지사항 상세 및 목록 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "detail"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["notices", "list"],
+      });
+      toast({
+        title: "공지사항이 삭제되었습니다",
+        description:
+          response.message || "공지사항이 성공적으로 삭제되었습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const errorMessage = await getErrorMessage(error);
+      toast({
+        title: "공지사항 삭제 실패",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 };

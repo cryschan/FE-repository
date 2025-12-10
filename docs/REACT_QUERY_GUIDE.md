@@ -35,7 +35,7 @@ import { api } from "@/lib/api";
 const MyComponent = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["posts"],
-    queryFn: () => api.get("api/posts").json(),
+    queryFn: () => api.get("/api/posts").json(),
     staleTime: 1 * 60 * 1000, // 1분
   });
 
@@ -58,7 +58,7 @@ const MyComponent = () => {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: (data) => api.post("api/posts", { json: data }).json(),
+    mutationFn: (data) => api.post("/api/posts", { json: data }).json(),
     onSuccess: () => {
       // 캐시 무효화 (자동 재조회)
       queryClient.invalidateQueries({ queryKey: ["posts"] });
