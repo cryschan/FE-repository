@@ -26,6 +26,10 @@ import type {
   NoticeUpdateRequest,
   NoticeUpdateResponse,
   NoticeDeleteResponse,
+  InquiriesResponse,
+  InquiryDetailResponse,
+  InquiriesPageResponse,
+  CreateInquiryRequest,
 } from "./api.types";
 // 배럴(Barrel) 패턴: 외부에서는 ./api만 참조해도 되도록 타입을 재노출
 export type * from "./api.types";
@@ -274,6 +278,48 @@ export const createNotice = async (
   data: NoticeCreateRequest
 ): Promise<NoticeCreateResponse> => {
   return api.post("/api/notices", { json: data }).json<NoticeCreateResponse>();
+};
+
+// ===== Inquiries (Customer Support) =====
+// My inquiries
+export const getMyInquiries = async (
+  page: number = 1,
+  size: number = 5,
+  status?: "PENDING" | "IN_PROGRESS" | "COMPLETED"
+): Promise<InquiriesPageResponse> => {
+  const searchParams: Record<string, string> = {
+    page: String(page),
+    size: String(size),
+  };
+  if (status) searchParams.status = status;
+  return api
+    .get("/api/inquiries", { searchParams })
+    .json<InquiriesPageResponse>();
+};
+
+export const getMyInquiryDetail = async (
+  id: number | string
+): Promise<InquiryDetailResponse> => {
+  return api.get(`/api/inquiries/${id}`).json<InquiryDetailResponse>();
+};
+
+export const createInquiry = async (
+  data: CreateInquiryRequest
+): Promise<InquiryDetailResponse> => {
+  return api
+    .post("/api/inquiries", { json: data })
+    .json<InquiryDetailResponse>();
+};
+
+// Admin inquiries
+export const getAdminInquiries = async (): Promise<InquiriesPageResponse> => {
+  return api.get("/api/admin/inquiries").json<InquiriesPageResponse>();
+};
+
+export const getAdminInquiryDetail = async (
+  id: number | string
+): Promise<InquiryDetailResponse> => {
+  return api.get(`/api/admin/inquiries/${id}`).json<InquiryDetailResponse>();
 };
 
 // ===== User Profile =====

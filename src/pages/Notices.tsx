@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Plus, ChevronRight, ChevronLeft } from "lucide-react";
+import { Plus, ChevronRight } from "lucide-react";
 import { useNoticesQuery, useCreateNoticeMutation } from "@/lib/queries";
 import { formatDateDot } from "@/lib/utils";
 import { getUserRole } from "@/routes/guards";
@@ -14,10 +14,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import NoticeForm from "@/components/NoticeForm";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 
 // Pagination constants
 const NOTICES_PAGE_SIZE = 10;
-const NOTICES_PAGES_PER_GROUP = 5;
 
 // 날짜 포맷팅: "YYYY.MM.DD" -> 공용 유틸 사용
 const formatNoticeDate = formatDateDot;
@@ -27,7 +27,6 @@ const Notices = () => {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [startPage, setStartPage] = useState(1);
 
   // 관리자 권한 확인
   const isAdmin = getUserRole() === "ADMIN";
@@ -46,14 +45,7 @@ const Notices = () => {
   // 공지사항 생성 Mutation
   const createNoticeMutation = useCreateNoticeMutation();
 
-  // 페이지 변경 시 startPage 조정
-  useEffect(() => {
-    const groupStart =
-      Math.floor((currentPage - 1) / NOTICES_PAGES_PER_GROUP) *
-        NOTICES_PAGES_PER_GROUP +
-      1;
-    setStartPage(groupStart);
-  }, [currentPage]);
+  // 그룹 계산은 공통 컴포넌트에서 처리
 
   const handleCreate = (data: {
     title: string;
@@ -146,46 +138,13 @@ const Notices = () => {
         </Card>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center gap-4 pt-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="h-8 w-8 p-0 hover:bg-muted disabled:opacity-50"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex gap-2">
-            {Array.from(
-              { length: NOTICES_PAGES_PER_GROUP },
-              (_, i) => startPage + i
-            )
-              .filter((page) => page <= totalPages)
-              .map((page) => (
-                <Button
-                  key={page}
-                  variant={page === currentPage ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className={page === currentPage ? "bg-primary" : ""}
-                >
-                  {page}
-                </Button>
-              ))}
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() =>
-              setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-            }
-            disabled={currentPage >= totalPages}
-            className="h-8 w-8 p-0 hover:bg-muted disabled:opacity-50"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </Button>
-        </div>
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onChange={setCurrentPage}
+          pagesPerGroup={5}
+          className="pt-4"
+        />
       </div>
 
       {/* Create Dialog */}

@@ -21,6 +21,11 @@ import {
   createNotice,
   updateNotice,
   deleteNotice,
+  getMyInquiries,
+  getMyInquiryDetail,
+  getAdminInquiries,
+  getAdminInquiryDetail,
+  createInquiry,
   type SignupRequest,
   type LoginRequest,
   type SignupResponse,
@@ -36,6 +41,11 @@ import {
   type NoticeUpdateRequest,
   type NoticeUpdateResponse,
   type NoticeDeleteResponse,
+  type InquiriesResponse,
+  type MyInquiryListItem,
+  type InquiriesPageResponse,
+  type InquiryDetailResponse,
+  type CreateInquiryRequest,
 } from "./api";
 
 // ===== Query Keys =====
@@ -67,6 +77,15 @@ export const queryKeys = {
     list: (page: number, size: number) =>
       ["notices", "list", page, size] as const,
     detail: (id: number | string) => ["notices", "detail", id] as const,
+  },
+  inquiries: {
+    my: (page: number, size: number) =>
+      ["inquiries", "my", page, size] as const,
+    myDetail: (id: number | string) =>
+      ["inquiries", "my", "detail", id] as const,
+    admin: ["inquiries", "admin"] as const,
+    adminDetail: (id: number | string) =>
+      ["inquiries", "admin", "detail", id] as const,
   },
 } as const;
 
@@ -507,5 +526,163 @@ export const useDeleteNoticeMutation = () => {
         variant: "destructive",
       });
     },
+  });
+};
+
+// ===== Inquiries Queries =====
+
+export type MyInquiriesQueryData = {
+  items: MyInquiryListItem[];
+  meta: {
+    currentPage: number;
+    totalPages: number;
+    totalElements: number;
+    size: number;
+    first: boolean;
+    last: boolean;
+  };
+};
+
+export const useMyInquiriesQuery = (
+  page: number = 1,
+  size: number = 5,
+  status?: "PENDING" | "IN_PROGRESS" | "COMPLETED"
+) => {
+  // 타입 가드: 페이지 응답 여부 판별
+  const isPage = (res: InquiriesResponse): res is InquiriesPageResponse => {
+    return !Array.isArray(res) && "inquiries" in res;
+  };
+
+  return useQuery({
+    queryKey: queryKeys.inquiries.my(page, size),
+    queryFn: async (): Promise<MyInquiriesQueryData> => {
+      try {
+        const res = await getMyInquiries(page, size, status);
+        if (Array.isArray(res)) {
+          const items = res;
+          const meta = {
+            currentPage: page,
+            totalPages: 1,
+            totalElements: items.length,
+            size,
+            first: page === 1,
+            last: true,
+          };
+          return { items, meta };
+        } else if (isPage(res)) {
+          const {
+            inquiries,
+            currentPage,
+            totalPages,
+            totalElements,
+            size: pageSize,
+            first,
+            last,
+          } = res;
+          return {
+            items: inquiries,
+            meta: {
+              currentPage,
+              totalPages,
+              totalElements,
+              size: pageSize,
+              first,
+              last,
+            },
+          };
+        }
+        // 불명확 응답 대비: 보수적으로 빈 값 반환
+        return {
+          items: [],
+          meta: {
+            currentPage: page,
+            totalPages: 1,
+            totalElements: 0,
+            size,
+            first: page === 1,
+            last: true,
+          },
+        };
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    staleTime: 1 * 60 * 1000,
+  });
+};
+
+export const useCreateInquiryMutation = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateInquiryRequest): Promise<InquiryDetailResponse> =>
+      createInquiry(data),
+    onSuccess: () => {
+      // 전체 'my inquiries' 쿼리 무효화 (모든 페이지/사이즈)
+      queryClient.invalidateQueries({ queryKey: ["inquiries", "my"] });
+      toast({
+        title: "문의가 접수되었습니다",
+        description: "빠른 시일 내에 답변 드리겠습니다.",
+        variant: "success",
+      });
+    },
+    onError: async (error: unknown) => {
+      const message = await getErrorMessage(error);
+      toast({
+        title: "문의 등록 실패",
+        description: message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useMyInquiryDetailQuery = (id: number | string | undefined) => {
+  return useQuery({
+    queryKey: queryKeys.inquiries.myDetail(id ?? ""),
+    queryFn: async (): Promise<InquiryDetailResponse> => {
+      if (!id) throw new Error("Inquiry ID is required");
+      try {
+        return await getMyInquiryDetail(id);
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const useAdminInquiriesQuery = () => {
+  return useQuery({
+    queryKey: queryKeys.inquiries.admin,
+    queryFn: async (): Promise<InquiriesPageResponse> => {
+      try {
+        return await getAdminInquiries();
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    staleTime: 1 * 60 * 1000,
+  });
+};
+
+export const useAdminInquiryDetailQuery = (id: number | string | undefined) => {
+  return useQuery({
+    queryKey: queryKeys.inquiries.adminDetail(id ?? ""),
+    queryFn: async (): Promise<InquiryDetailResponse> => {
+      if (!id) throw new Error("Admin Inquiry ID is required");
+      try {
+        return await getAdminInquiryDetail(id);
+      } catch (error) {
+        const message = await getErrorMessage(error);
+        throw new Error(message);
+      }
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 };

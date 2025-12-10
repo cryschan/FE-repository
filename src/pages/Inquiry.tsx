@@ -32,7 +32,7 @@ type AdminInquiry = {
   id: string;
   title: string;
   category: string;
-  status: "pending" | "answered";
+  status: "pending" | "in_progress" | "completed";
   createdAt: string;
   content?: string | null;
   answer?: string | null;
@@ -45,7 +45,7 @@ const initialInquiries: AdminInquiry[] = [
     id: "1",
     title: "블로그 글 생성 중 오류가 발생했습니다",
     category: "기술 문의",
-    status: "answered",
+    status: "completed",
     createdAt: "2024-11-15",
     content: "생성 과정에서 500 에러가 떠요",
     answer:
@@ -68,7 +68,7 @@ const initialInquiries: AdminInquiry[] = [
     id: "3",
     title: "결제 관련 문의",
     category: "결제/환불",
-    status: "answered",
+    status: "completed",
     createdAt: "2024-11-10",
     content: "결제 영수증을 재발급 받을 수 있을까요?",
     answer: "내 정보 > 결제 관리에서 영수증 재발급이 가능합니다.",
@@ -87,8 +87,10 @@ const Inquiry = () => {
 
   // 미답변 우선 정렬, 동일 상태는 최신 작성일 순
   const sortedInquiries = useMemo(() => {
+    const rank = (s: AdminInquiry["status"]) =>
+      s === "pending" ? 0 : s === "in_progress" ? 1 : 2;
     return [...inquiries].sort((a, b) => {
-      if (a.status !== b.status) return a.status === "pending" ? -1 : 1;
+      if (a.status !== b.status) return rank(a.status) - rank(b.status);
       return b.createdAt.localeCompare(a.createdAt);
     });
   }, [inquiries]);
@@ -115,7 +117,7 @@ const Inquiry = () => {
     setInquiries((prev) =>
       prev.map((q) =>
         q.id === active.id
-          ? { ...q, answer: answerDraft.trim(), status: "answered" }
+          ? { ...q, answer: answerDraft.trim(), status: "completed" }
           : q
       )
     );
@@ -172,13 +174,22 @@ const Inquiry = () => {
                       <TableCell className="whitespace-nowrap">
                         <Badge
                           variant={
-                            q.status === "answered" ? "default" : "secondary"
+                            q.status === "completed"
+                              ? "default"
+                              : q.status === "in_progress"
+                                ? "outline"
+                                : "secondary"
                           }
                         >
-                          {q.status === "answered" ? (
+                          {q.status === "completed" ? (
                             <span className="flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" />
                               답변완료
+                            </span>
+                          ) : q.status === "in_progress" ? (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              답변중
                             </span>
                           ) : (
                             <span className="flex items-center gap-1">
@@ -204,10 +215,18 @@ const Inquiry = () => {
                 {active && (
                   <Badge
                     variant={
-                      active.status === "answered" ? "default" : "secondary"
+                      active.status === "completed"
+                        ? "default"
+                        : active.status === "in_progress"
+                          ? "outline"
+                          : "secondary"
                     }
                   >
-                    {active.status === "answered" ? "답변완료" : "대기중"}
+                    {active.status === "completed"
+                      ? "답변완료"
+                      : active.status === "in_progress"
+                        ? "답변중"
+                        : "대기중"}
                   </Badge>
                 )}
               </DialogTitle>
@@ -252,7 +271,7 @@ const Inquiry = () => {
 
             <DialogFooter>
               <Button onClick={saveAnswer}>
-                {active?.status === "answered" ? "답변 수정" : "답변 등록"}
+                {active?.status === "completed" ? "답변 수정" : "답변 등록"}
               </Button>
             </DialogFooter>
           </DialogContent>
