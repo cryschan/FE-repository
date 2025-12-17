@@ -551,7 +551,11 @@ const Posts = () => {
                         components={{
                           img: ({ node, ...props }) => (
                             // eslint-disable-next-line jsx-a11y/alt-text
-                            <img {...props} style={{ maxWidth: "100%" }} />
+                            <img
+                              {...props}
+                              style={{ maxWidth: "100%" }}
+                              referrerPolicy="no-referrer"
+                            />
                           ),
                         }}
                       >
